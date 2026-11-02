@@ -16,9 +16,11 @@ namespace IFactory.Interaction.SuperClient
         void ISchedulerLifetime.CancelPending()
         {
             foreach (var pair in Awaiters)
-                if (Awaiters.TryRemove(pair.Key, out var awaiter)) awaiter.Write(null!);
+                if (Awaiters.TryRemove(pair)) pair.Value.Write(null!);
         }
 
+        private long _unmatched;
+        public long UnmatchedPackages => Interlocked.Read(ref _unmatched);
         public Action<TReceivePackage>? MismatchingPackageReceiveHandler { get; set; }
 
         public ValueTask HandlePackage(TReceivePackage package)
@@ -26,7 +28,7 @@ namespace IFactory.Interaction.SuperClient
             if (Awaiters.TryRemove(package.Key, out var awaiter))
                 awaiter.Write(package);
             else
-                MismatchingPackageReceiveHandler?.Invoke(package);
+            { Interlocked.Increment(ref _unmatched); MismatchingPackageReceiveHandler?.Invoke(package); }
 
             return ValueTask.CompletedTask;
         }
@@ -36,11 +38,11 @@ namespace IFactory.Interaction.SuperClient
             ArgumentNullException.ThrowIfNull(package, nameof(package));
             var key = package.Key; 
             var awaiter = new KeyPackageAwaiter<TKey, TReceivePackage>() { Key = package.Key };
-            awaiter.Completed = () => ((ICollection<KeyValuePair<TKey, IPackageAwaiter<TReceivePackage>>>)Awaiters)
-                .Remove(new(key, awaiter));
+            awaiter.Completed = () => Awaiters.TryRemove(new KeyValuePair<TKey, IPackageAwaiter<TReceivePackage>>(key, awaiter));
             if (!Awaiters.TryAdd(key, awaiter))
                 throw new InvalidOperationException("A request with this key is already pending.");
             return awaiter;
         }
     }
 }
+

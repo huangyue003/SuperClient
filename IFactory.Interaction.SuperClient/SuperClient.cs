@@ -117,7 +117,7 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
     private async Task<TReceivePackage?> SendReceiveCoreAsync(TSendPackage package, Func<IChannel<TReceivePackage>, Task> send, int timeout)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(timeout, Timeout.Infinite);
-        var serialize = Scheduler is ImmediatePackageScheduler<TSendPackage, TReceivePackage>;
+        var serialize = Scheduler is ISerializedRequestScheduler;
         if (serialize) await _requests.WaitAsync().ConfigureAwait(false);
         IPackageAwaiter<TReceivePackage>? awaiter = null;
         try
@@ -241,6 +241,7 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
         _logger?.LogInformation("Channel {Uri} closed: {Reason}.", Uri, args.Reason);
     }
 }
+
 
 
 
