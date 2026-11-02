@@ -1,5 +1,12 @@
 <Project>
   <PropertyGroup>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <BaseOutputPath>bin\$(Platform)\</BaseOutputPath>
+    <BaseIntermediateOutputPath>obj\$(Platform)\</BaseIntermediateOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/bin/**;**/obj/**</DefaultItemExcludes>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <LangVersion>latest</LangVersion>
     <TargetFramework>net10.0</TargetFramework>
     <!-- Latest stable package versions checked on 2026-11-03. -->
@@ -11,3 +18,4 @@
     <XunitVisualStudioRunnerVersion>4.0.1</XunitVisualStudioRunnerVersion>
   </PropertyGroup>
 </Project>
+

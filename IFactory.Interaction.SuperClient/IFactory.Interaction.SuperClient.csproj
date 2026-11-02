@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
 		<Platforms>AnyCPU;x86</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
@@ -12,5 +10,6 @@
 		<PackageReference Include="System.IO.Ports" />
 	</ItemGroup>
 </Project>
+
 
 
