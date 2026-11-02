@@ -34,7 +34,7 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
     public Task RunAsync(string uri, IPipelineFilter<TReceivePackage> pipelineFilter)
     {
         var endpoint = new SerialIOEndPoint(uri);
-        var options = ChannelUri.Options(ChannelUri.ParseQuery(new Uri(uri)), _logger, _options);
+        var options = ChannelUri.Options(ChannelUri.ParseQuery(ChannelUri.Parse(uri)), _logger, _options);
         lock (_sync)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -110,4 +110,5 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
         }
     }
 }
+
 

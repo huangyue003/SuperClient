@@ -55,7 +55,7 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
 
     private async Task InitializeAsync(string uri)
     {
-        var address = new System.Uri(uri);
+        var address = ChannelUri.Parse(uri);
         IChannelCreator<TReceivePackage> creator = address.Scheme switch
         {
             "sio" => new SerialIOChannelCreator<TReceivePackage>(_logger, _options),
@@ -243,6 +243,7 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
         _logger?.LogInformation("Channel {Uri} closed: {Reason}.", Uri, args.Reason);
     }
 }
+
 
 
 

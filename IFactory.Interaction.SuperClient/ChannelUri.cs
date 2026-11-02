@@ -5,6 +5,12 @@ namespace IFactory.Interaction.SuperClient;
 
 internal static class ChannelUri
 {
+    internal static Uri Parse(string uri)
+    {
+        if (!Uri.TryCreate(uri, UriKind.Absolute, out var address))
+            throw new ArgumentException($"Invalid absolute channel URI '{uri}'.", nameof(uri));
+        return address;
+    }
     internal static IPEndPoint LocalEndPoint(Uri uri)
     {
         if (uri.Port < 0 || !IPEndPoint.TryParse(uri.Authority, out var endpoint))
@@ -69,5 +75,6 @@ internal static class ChannelUri
     private static int PositiveInt(string value, string name) => int.TryParse(value, out var n) && n > 0
         ? n : throw new ArgumentException($"{name} must be a positive integer.");
 }
+
 
 

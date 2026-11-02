@@ -34,7 +34,8 @@ public class TcpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
     }
     public Task RunAsync(string uri, IPipelineFilter<TReceicePackage> pipelineFilter)
     {
-        var address = new Uri(uri);
+        var address = ChannelUri.Parse(uri);
+        if (address.Scheme != "tcp") throw new ArgumentException("TCP creator requires a tcp URI.", nameof(uri));
         var query = ChannelUri.ParseQuery(address);
         var options = ChannelUri.Options(query, _logger, _options);
         var role = query.GetValueOrDefault("Role", "client");
@@ -121,4 +122,5 @@ public class TcpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
         }
     }
 }
+
 

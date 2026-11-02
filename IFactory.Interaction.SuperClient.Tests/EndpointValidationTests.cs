@@ -4,6 +4,8 @@ namespace IFactory.Interaction.SuperClient.Tests;
 public class EndpointValidationTests
 {
     [Theory]
+    [InlineData("not-an-absolute-uri")]
+    [InlineData("tcp://127.0.0.1:99999")]
     [InlineData("tcp://localhost:0/?Role=server")]
     [InlineData("udp://localhost:0/?RemoteEndPoint=127.0.0.1:9")]
     [InlineData("udp://127.0.0.1:0/?RemoteEndPoint=bad")]
@@ -14,3 +16,4 @@ public class EndpointValidationTests
         Assert.Contains(uri, error.Message); Assert.Equal("uri", error.ParamName);
     }
 }
+

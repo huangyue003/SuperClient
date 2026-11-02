@@ -38,7 +38,7 @@ namespace IFactory.Interaction.SuperClient
         /// </summary>
         /// <param name="uri">sio://COM2/?BaudRate=9600&Parity=None&StopBits=1&DataBits=8</param>
         public SerialIOEndPoint(string uri)
-            : this(new Uri(uri))
+            : this(ChannelUri.Parse(uri))
         {
             
         }
@@ -103,6 +103,7 @@ namespace IFactory.Interaction.SuperClient
         }
     }
 }
+
 
 
 

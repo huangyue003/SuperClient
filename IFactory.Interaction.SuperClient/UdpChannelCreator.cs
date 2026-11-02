@@ -22,7 +22,8 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
     }
     public Task RunAsync(string uri, IPipelineFilter<TReceicePackage> pipelineFilter)
     {
-        var address = new Uri(uri);
+        var address = ChannelUri.Parse(uri);
+        if (address.Scheme != "udp") throw new ArgumentException("UDP creator requires a udp URI.", nameof(uri));
         var local = ChannelUri.LocalEndPoint(address);
         var query = ChannelUri.ParseQuery(address);
         if (!query.TryGetValue("RemoteEndPoint", out var remoteText))
@@ -62,6 +63,7 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
         return Task.CompletedTask;
     }
 }
+
 
 
 
