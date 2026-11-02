@@ -23,8 +23,10 @@ namespace IFactory.Interaction.SuperClient
         Task ResetChannelAsync(string uri);
         Task SendAsync(ReadOnlyMemory<byte> data);
         Task SendAsync(TSendPackage package);
+        /// <summary>Response timeout excludes request queueing and sending; -1 waits indefinitely.</summary>
         Task<TReceivePackage?> SendReceiveAsync(TSendPackage package, int millisecondsTimeout);
         Task<TReceivePackage?> SendReceiveAsync(ReadOnlyMemory<byte> data, int millisecondsTimeout);
     }
 }
+
 

@@ -30,6 +30,8 @@ namespace IFactory.Interaction.SuperClient
 
         public CloseReason? CloseReason { get; protected set; }
 
+        public DateTimeOffset? LastSendTime { get; protected set; }
+        public DateTimeOffset? LastReceiveTime { get; protected set; }
         public DateTimeOffset LastActiveTime { get; protected set; } = DateTimeOffset.Now;
 
         protected virtual void OnClosed()
@@ -44,9 +46,10 @@ namespace IFactory.Interaction.SuperClient
             foreach (EventHandler<CloseEventArgs> handler in closed.GetInvocationList())
             {
                 try { handler(this, new CloseEventArgs(closeReason)); }
-                catch { /* An observer must not prevent transport cleanup or other observers. */ }
+                catch (Exception ex) { try { OnObserverFaulted(ex); } catch { } }
             }
         }
+        protected virtual void OnObserverFaulted(Exception error) { }
         private int _closedRaised;
 
         public event EventHandler<CloseEventArgs>? Closed;
@@ -57,4 +60,5 @@ namespace IFactory.Interaction.SuperClient
 
     }
 }
+
 

@@ -12,6 +12,8 @@ namespace IFactory.Interaction.SuperClient
     {
         void Start();
         
+        /// <summary>Wait for all bytes to be accepted by the transport, not by the peer application.</summary>
+        /// <remarks>Failure may follow partial acceptance; never blindly retry a command.</remarks>
         ValueTask SendAsync(ReadOnlyMemory<byte> data);
         ValueTask SendAsync<TPackage>(IPackageEncoder<TPackage> packageEncoder, TPackage package);
 
@@ -28,6 +30,8 @@ namespace IFactory.Interaction.SuperClient
         EndPoint? LocalEndPoint { get; }
 
         DateTimeOffset LastActiveTime { get; }
+        DateTimeOffset? LastSendTime => null;
+        DateTimeOffset? LastReceiveTime => null;
 
         /// <summary>Built-in transports reject detachment before changing state.</summary>
         /// <remarks>Use CloseAsync. This API does not transfer ownership of a socket or serial port.</remarks>
@@ -42,5 +46,6 @@ namespace IFactory.Interaction.SuperClient
         IAsyncEnumerable<TPackageInfo> RunAsync();
     }
 }
+
 
 

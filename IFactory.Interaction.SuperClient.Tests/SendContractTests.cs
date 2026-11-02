@@ -85,5 +85,30 @@ public class SendContractTests
         call.Accept(1); await send;
         await channel.CloseAsync(CloseReason.LocalClosing);
     }
-}
+    [Fact]
+    public async Task UnexpectedCancellationIsATransportFaultNotATimeout()
+    {
+        var channel = new ControlledChannel(); channel.Start();
+        var send = channel.SendAsync(new byte[] { 1 }).AsTask();
+        var cause = new OperationCanceledException("transport rejected independently of our tokens");
+        (await channel.NextSendAsync()).Fail(cause);
+        var error = await Assert.ThrowsAsync<ChannelTransportException>(() => send);
+        Assert.Equal(CloseReason.SocketError, error.Reason); Assert.Same(cause, error.InnerException);
+        await channel.CloseAsync(CloseReason.LocalClosing);
+    }
+    [Fact]
+    public async Task QueueDeadlineDoesNotCloseAnotherSendOrTransmitTimedOutBytes()
+    {
+        var options = new ChannelOptions();
+        var channel = new ControlledChannel(options); channel.Start();
+        var first = channel.SendAsync(new byte[] { 1 }).AsTask(); var call = await channel.NextSendAsync();
+        options.SendTimeout = 100;
+        var second = channel.SendAsync(new byte[] { 2 }).AsTask();
+        await Assert.ThrowsAsync<TimeoutException>(() => second);
+        Assert.False(channel.IsClosed); Assert.Null(channel.CloseReason);
+        call.Accept(1); await first;
+        Assert.Equal(new byte[] { 1 }, channel.Accepted);
+        await channel.CloseAsync(CloseReason.LocalClosing);
+    }}
+
 

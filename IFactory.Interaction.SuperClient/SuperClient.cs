@@ -109,6 +109,8 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
         await Initialization.ConfigureAwait(false);
         await GetChannel().SendAsync(_encoder, package).ConfigureAwait(false);
     }
+    /// <summary>Wait for a matching response after transport acceptance.</summary>
+    /// <remarks>millisecondsTimeout excludes serialized-request queueing and sending; -1 waits indefinitely.</remarks>
     public Task<TReceivePackage?> SendReceiveAsync(TSendPackage package, int millisecondsTimeout)
         => SendReceiveCoreAsync(package, channel => channel.SendAsync(_encoder, package).AsTask(), millisecondsTimeout);
     public Task<TReceivePackage?> SendReceiveAsync(ReadOnlyMemory<byte> data, int millisecondsTimeout)
@@ -241,6 +243,7 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
         _logger?.LogInformation("Channel {Uri} closed: {Reason}.", Uri, args.Reason);
     }
 }
+
 
 
 

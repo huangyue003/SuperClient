@@ -21,13 +21,13 @@ namespace IFactory.Interaction.SuperClient
     {
         public string PortName { get; set; } = string.Empty;
 
-        public byte Databits { get; set; }
+        public byte Databits { get; set; } = 8;
 
-        public int BaudRate { set; get; }
+        public int BaudRate { set; get; } = 9600;
 
         public Parity Parity { set; get; }
 
-        public StopBits StopBits { set; get; }
+        public StopBits StopBits { set; get; } = StopBits.One;
 
         public SerialIOEndPoint()
         {
@@ -66,12 +66,12 @@ namespace IFactory.Interaction.SuperClient
             if (query.TryGetValue("parity", out var parity) && !string.IsNullOrEmpty(parity))
             {
                 if (!Enum.TryParse(typeof(Parity), parity, true, out var parityParseValue))
-                    throw new ArgumentException("Parity is invalid in the ListenOptions.");
+                    throw new ArgumentException("Parity must be None, Odd, Even, Mark or Space (or a defined numeric value).");
                 
                 parityValue = (Parity)parityParseValue;
             }
 
-            if (!Enum.IsDefined(parityValue)) throw new ArgumentException("Invalid parity.");
+            if (!Enum.IsDefined(parityValue)) throw new ArgumentException("Parity must be None, Odd, Even, Mark or Space (or a defined numeric value).");
             Parity = parityValue;
 
             var dataBitsValue = 8;
@@ -93,15 +93,16 @@ namespace IFactory.Interaction.SuperClient
             if (query.TryGetValue("stopbits", out var stopbits) && !string.IsNullOrEmpty(stopbits))
             {
                 if (!Enum.TryParse(typeof(StopBits), stopbits, true, out var stopbitsParseValue))
-                    throw new ArgumentException("Stopbits is invalid in the ListenOptions.");
+                    throw new ArgumentException("StopBits must be One, Two or OnePointFive (or a defined numeric value).");
                 
                 stopBitsValue = (StopBits)stopbitsParseValue;
             }
 
-            if (!Enum.IsDefined(stopBitsValue) || stopBitsValue == StopBits.None) throw new ArgumentException("Invalid stop bits.");
+            if (!Enum.IsDefined(stopBitsValue) || stopBitsValue == StopBits.None) throw new ArgumentException("StopBits must be One, Two or OnePointFive (or a defined numeric value).");
             StopBits = stopBitsValue;
         }
     }
 }
+
 
 

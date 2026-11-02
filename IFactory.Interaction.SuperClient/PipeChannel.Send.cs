@@ -86,7 +86,8 @@ public abstract partial class PipeChannel<TPackageInfo>
                     accepted += count;
                     buffer = buffer.Slice(count);
                 }
-                LastActiveTime = DateTimeOffset.Now;
+                token.ThrowIfCancellationRequested();
+                LastSendTime = LastActiveTime = DateTimeOffset.Now;
             }
             catch (Exception ex)
             {
@@ -95,7 +96,9 @@ public abstract partial class PipeChannel<TPackageInfo>
                 var failure = Volatile.Read(ref _failure);
                 var error = new ChannelTransportException(failure?.Reason ?? SuperClient.CloseReason.SocketError,
                     accepted, length - accepted, failure?.Error ?? ex);
-                RecordFailure(error, error.Reason, "send", accepted, length - accepted);
+                var latched = RecordFailure(error, error.Reason, "send", accepted, length - accepted);
+                if (!ReferenceEquals(latched.Error, error))
+                    error = new ChannelTransportException(latched.Reason, accepted, length - accepted, latched.Error);
                 throw error;
             }
         }
@@ -109,20 +112,26 @@ public abstract partial class PipeChannel<TPackageInfo>
         }
     }
 
-    private TimeoutException SendTimedOut(long length, long accepted, string stage, bool close)
+    private Exception SendTimedOut(long length, long accepted, string stage, bool close)
     {
         var error = new TimeoutException($"Channel '{Identity}' {stage} timed out; accepted={accepted}, pending={length - accepted}.");
         error.Data[nameof(ChannelTransportException.BytesAccepted)] = accepted;
         error.Data[nameof(ChannelTransportException.BytesPending)] = length - accepted;
-        if (close) RecordFailure(error, SuperClient.CloseReason.TimeOut, stage, accepted, length - accepted);
+        if (close)
+        {
+            var latched = RecordFailure(error, SuperClient.CloseReason.TimeOut, stage, accepted, length - accepted);
+            if (!ReferenceEquals(latched.Error, error))
+                return new ChannelTransportException(latched.Reason, accepted, length - accepted, latched.Error);
+        }
         else Logger?.LogWarning(error, "Channel {Identity} {Stage} timed out: accepted={Accepted}, pending={Pending}.",
             Identity, stage, accepted, length - accepted);
         return error;
     }
 
-    private void RecordFailure(Exception error, CloseReason reason, string stage, long accepted = 0, long pending = 0)
+    private Failure RecordFailure(Exception error, CloseReason reason, string stage, long accepted = 0, long pending = 0)
     {
-        if (Interlocked.CompareExchange(ref _failure, new Failure(error, reason), null) is not null) return;
+        var proposed = new Failure(error, reason);
+        if (Interlocked.CompareExchange(ref _failure, proposed, null) is { } existing) return existing;
         CloseReason = reason;
         // Expected shutdown is filtered by state, never by exception type alone.
         Logger?.LogError(error, "Channel {Identity} {Stage} failed: reason={Reason}, accepted={Accepted}, pending={Pending}.",
@@ -130,7 +139,10 @@ public abstract partial class PipeChannel<TPackageInfo>
         _cts.Cancel();
         try { Close(); }
         catch (Exception cleanup) { OnError("Transport cleanup failed.", cleanup); }
+        return proposed;
     }
 }
+
+
 
 

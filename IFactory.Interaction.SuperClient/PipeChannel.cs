@@ -65,15 +65,11 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
         catch (Exception ex) { if (!IsIgnorableException(ex)) OnError("Channel processing failed.", ex); }
         finally
         {
-            if (true)
-            {
-                try { Close(); }
-                catch (Exception ex) { if (!IsIgnorableException(ex)) OnError("Transport cleanup failed.", ex); }
-                finally { OnClosed(); }
-            }
+            try { Close(); }
+            catch (Exception ex) { if (!IsIgnorableException(ex)) OnError("Transport cleanup failed.", ex); }
+            finally { OnClosed(); Volatile.Write(ref _closedInternally, 1); }
         }
     }
-
     public override async IAsyncEnumerable<TPackageInfo> RunAsync()
     {
         if (_started == 0) throw new InvalidOperationException("Channel has not started.");
@@ -133,11 +129,11 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
                 { throw new TimeoutException("Receive timed out.", ex); }
                 if (count == 0)
                 {
-                    CloseReason ??= SuperClient.CloseReason.RemoteClosing;
+                    // EOF is latched after the parser drains the final buffered package.
                     break;
                 }
                 writer.Advance(count);
-                LastActiveTime = DateTimeOffset.Now;
+                LastReceiveTime = LastActiveTime = DateTimeOffset.Now;
                 var result = await writer.FlushAsync(_cts.Token).ConfigureAwait(false);
                 if (result.IsCanceled || result.IsCompleted) break;
             }
@@ -198,17 +194,15 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
         }
         catch (Exception ex)
         {
-            CloseReason = SuperClient.CloseReason.ProtocolError;
-            OnError("Protocol error.", ex);
-            _cts.Cancel();
-            Close();
+            RecordFailure(ex, SuperClient.CloseReason.ProtocolError, "protocol");
         }
         finally
         {
             await reader.CompleteAsync().ConfigureAwait(false);
             WriteEOFPackage();
-            Interlocked.CompareExchange(ref _failure, new Failure(new IOException("Receive stream ended."),
-                CloseReason ?? SuperClient.CloseReason.RemoteClosing), null);
+            var proposed = new Failure(new IOException("Receive stream ended."), SuperClient.CloseReason.RemoteClosing);
+            var ended = Interlocked.CompareExchange(ref _failure, proposed, null) ?? proposed;
+            CloseReason = ended.Reason;
             _cts.Cancel();
         }
     }
@@ -274,8 +268,9 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     public override async ValueTask CloseAsync(CloseReason closeReason)
     {
         if (Volatile.Read(ref _closedInternally) != 0) return;
-        Interlocked.CompareExchange(ref _failure, new Failure(new IOException("Channel closed."), closeReason), null);
-        CloseReason ??= closeReason;
+        var proposed = new Failure(new IOException("Channel closed."), closeReason);
+        var closed = Interlocked.CompareExchange(ref _failure, proposed, null) ?? proposed;
+        CloseReason = closed.Reason;
         _cts.Cancel();
         try { Close(); }
         finally
@@ -305,6 +300,8 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected void WriteEOFPackage() => _packagePipe.Complete();
     public override ValueTask DetachAsync() => ValueTask.FromException(new NotSupportedException(
         "Transport ownership cannot be transferred. Use CloseAsync instead."));
+    protected override void OnObserverFaulted(Exception error)
+        => Logger?.LogError(error, "Channel {Identity} Closed observer failed.", Identity);
     protected void OnError(string message, Exception? ex = null) => Logger?.LogError(ex, "{Message}", message);
     protected virtual bool IsIgnorableException(Exception ex)
         => ex is ObjectDisposedException or OperationCanceledException;
@@ -312,6 +309,9 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected abstract ValueTask<int> FillPipeWithDataAsync(Memory<byte> memory, CancellationToken cancellationToken);
     protected abstract ValueTask<int> SendOverIOAsync(ReadOnlySequence<byte> buffer, CancellationToken cancellationToken);
 }
+
+
+
 
 
 
