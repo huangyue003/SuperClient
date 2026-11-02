@@ -1,9 +1,22 @@
+using System.Net;
 using Microsoft.Extensions.Logging;
 
 namespace IFactory.Interaction.SuperClient;
 
 internal static class ChannelUri
 {
+    internal static IPEndPoint LocalEndPoint(Uri uri)
+    {
+        if (uri.Port < 0 || !IPEndPoint.TryParse(uri.Authority, out var endpoint))
+            throw new ArgumentException($"Local endpoint must contain an IP literal and port in URI '{uri}'.", nameof(uri));
+        return endpoint;
+    }
+    internal static IPEndPoint RemoteEndPoint(string value, Uri uri)
+    {
+        if (!IPEndPoint.TryParse(value, out var endpoint) || endpoint.Port == 0)
+            throw new ArgumentException($"RemoteEndPoint must contain an IP literal and nonzero port in URI '{uri}'.", nameof(uri));
+        return endpoint;
+    }
     internal static Dictionary<string, string> ParseQuery(Uri uri)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -21,7 +34,7 @@ internal static class ChannelUri
 
     internal static ChannelOptions Options(Dictionary<string, string> query, ILogger? logger)
     {
-        var options = new ChannelOptions { Logger = logger! };
+        var options = new ChannelOptions { Logger = logger };
         if (query.TryGetValue("ReceiveBufferSize", out var receive))
             options.ReceiveBufferSize = PositiveInt(receive, "ReceiveBufferSize");
         if (query.TryGetValue("MaxPackageLength", out var max))
@@ -32,3 +45,4 @@ internal static class ChannelUri
     private static int PositiveInt(string value, string name) => int.TryParse(value, out var n) && n > 0
         ? n : throw new ArgumentException($"{name} must be a positive integer.");
 }
+

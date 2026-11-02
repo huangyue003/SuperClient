@@ -43,7 +43,7 @@ public class TcpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
             if (_listener is not null || _socket is not null) throw new InvalidOperationException("Creator has already started.");
             if (role.Equals("server", StringComparison.OrdinalIgnoreCase))
             {
-                var endpoint = IPEndPoint.Parse(address.Authority);
+                var endpoint = ChannelUri.LocalEndPoint(address);
                 _listener = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 try { _listener.Bind(endpoint); _listener.Listen(16); }
                 catch { _listener.Dispose(); _listener = null; throw; }
@@ -89,3 +89,4 @@ public class TcpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
         }
     }
 }
+

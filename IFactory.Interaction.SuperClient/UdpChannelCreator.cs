@@ -20,11 +20,11 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
     public Task RunAsync(string uri, IPipelineFilter<TReceicePackage> pipelineFilter)
     {
         var address = new Uri(uri);
-        var local = IPEndPoint.Parse(address.Authority);
+        var local = ChannelUri.LocalEndPoint(address);
         var query = ChannelUri.ParseQuery(address);
         if (!query.TryGetValue("RemoteEndPoint", out var remoteText))
             throw new ArgumentException("RemoteEndPoint is required in UDP URI.");
-        var remote = IPEndPoint.Parse(remoteText);
+        var remote = ChannelUri.RemoteEndPoint(remoteText, address);
         if (local.AddressFamily != remote.AddressFamily) throw new ArgumentException("Endpoint address families must match.");
         var options = ChannelUri.Options(query, _logger);
         // A UDP datagram must be received in full, otherwise the OS discards its tail.
@@ -58,3 +58,4 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
         return Task.CompletedTask;
     }
 }
+
