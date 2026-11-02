@@ -1,0 +1,10 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Update="Microsoft.Extensions.Logging.Abstractions" Version="$(LoggingAbstractionsVersion)" />
+    <PackageReference Update="SuperSocket.ProtoBase" Version="$(SuperSocketProtoBaseVersion)" />
+    <PackageReference Update="System.IO.Ports" Version="$(SystemIOPortsVersion)" />
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
+    <PackageReference Update="xunit" Version="$(XunitVersion)" />
+    <PackageReference Update="xunit.runner.visualstudio" Version="$(XunitVisualStudioRunnerVersion)" />
+  </ItemGroup>
+</Project>

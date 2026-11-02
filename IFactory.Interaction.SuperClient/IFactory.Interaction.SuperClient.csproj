@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Platforms>AnyCPU;x86</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+        <InternalsVisibleTo Include="IFactory.Interaction.SuperClient.Tests" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+		<PackageReference Include="SuperSocket.ProtoBase" />
+		<PackageReference Include="System.IO.Ports" />
+	</ItemGroup>
+</Project>
+
+

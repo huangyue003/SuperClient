@@ -1,0 +1,51 @@
+# .NET build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+
+# IDE and user-specific settings
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.sln.iml
+*.DotSettings.user
+
+# Test and coverage output
+[Tt]est[Rr]esults/
+coverage/
+*.coverage
+*.coveragexml
+
+# NuGet package output
+*.nupkg
+*.snupkg
+packages/
+
+# Local secrets and publish settings
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.publishsettings
+*.pubxml.user
+
+# Logs and operating system files
+*.log
+Thumbs.db
+.DS_Store
+
+# Local Codex runtime state
+.codex/*.local.*
+.codex/logs/
+.codex/sessions/
+
+# Private key material
+*.key
+*.pem
+
+# Local WorkBuddy memory and agent state
+.workbuddy/
