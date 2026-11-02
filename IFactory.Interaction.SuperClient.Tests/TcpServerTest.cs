@@ -12,14 +12,11 @@ public class TcpServerTest
         var creator = new TcpChannelCreator<byte[]>(null);
         var connected = new TaskCompletionSource<IChannel<byte[]>>(TaskCreationOptions.RunContinuationsAsynchronously);
         creator.ChannelCreated = channel => { channel.Start(); connected.TrySetResult(channel); };
-        // Reserve an ephemeral port briefly; retry is unnecessary on an isolated loopback test host.
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        int port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
         try
         {
-            await creator.RunAsync($"tcp://127.0.0.1:{port}/?Role=server&ReceiveBufferSize=128&MaxPackageLength=1024", new FixedSizePipelineFilter(1));
+            await creator.RunAsync("tcp://127.0.0.1:0/?Role=server&ReceiveBufferSize=128&MaxPackageLength=1024", new FixedSizePipelineFilter(1));
+            var port = Assert.IsType<IPEndPoint>(creator.LocalEndPoint).Port;
+            Assert.True(port > 0);
             using var remote = new TcpClient();
             await remote.ConnectAsync(IPAddress.Loopback, port);
             var channel = await connected.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -46,4 +43,5 @@ public class TcpServerTest
         await Assert.ThrowsAsync<ObjectDisposedException>(() => creator.RunAsync("tcp://127.0.0.1:1", new FixedSizePipelineFilter(1)));
     }
 }
+
 

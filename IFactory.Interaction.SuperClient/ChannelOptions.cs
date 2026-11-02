@@ -34,6 +34,32 @@ namespace IFactory.Interaction.SuperClient
         /// <value></value>
         public int SendTimeout { get; set; }
 
+        /// <summary>Single TCP connect attempt in milliseconds; 0 disables the deadline.</summary>
+        public int ConnectTimeout { get; set; } = 5000;
+        public int ReconnectMinDelay { get; set; } = 200;
+        public int ReconnectMaxDelay { get; set; } = 5000;
+        public bool ReconnectJitter { get; set; } = true;
+        public bool SerialReconnect { get; set; }
+        public bool NoDelay { get; set; }
+        public bool KeepAlive { get; set; }
+
+        internal ChannelOptions Copy()
+        {
+            var copy = (ChannelOptions)MemberwiseClone();
+            copy.Values = new Dictionary<string, string>(Values);
+            return copy;
+        }
+        internal void Validate()
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(MaxPackageLength);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(MaxPendingPackages);
+            ArgumentOutOfRangeException.ThrowIfNegative(ReceiveTimeout);
+            ArgumentOutOfRangeException.ThrowIfNegative(SendTimeout);
+            ArgumentOutOfRangeException.ThrowIfNegative(ConnectTimeout);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(ReconnectMinDelay);
+            ArgumentOutOfRangeException.ThrowIfLessThan(ReconnectMaxDelay, ReconnectMinDelay);
+        }
+
         public ILogger? Logger { get; set; }
 
         public Pipe? In { get; set; }
@@ -43,4 +69,5 @@ namespace IFactory.Interaction.SuperClient
         public Dictionary<string, string> Values { get; set; } = new();
     }
 }
+
 

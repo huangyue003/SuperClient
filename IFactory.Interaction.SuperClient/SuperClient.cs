@@ -7,6 +7,7 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
     where TReceivePackage : class where TSendPackage : class
 {
     private readonly ILogger? _logger;
+    private readonly ChannelOptions? _options;
     private readonly IPackageEncoder<TSendPackage> _encoder;
     private readonly IPipelineFilter<TReceivePackage> _filter;
     private readonly SemaphoreSlim _lifecycle = new(1, 1);
@@ -20,7 +21,13 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
 
     public SuperClient(string uri, IPipelineFilter<TReceivePackage> pipelineFilter,
         IPackageEncoder<TSendPackage> packageEncoder, IPackageScheduler<TSendPackage, TReceivePackage> scheduler, ILogger? logger)
+        : this(uri, pipelineFilter, packageEncoder, scheduler, logger, null) { }
+
+    public SuperClient(string uri, IPipelineFilter<TReceivePackage> pipelineFilter,
+        IPackageEncoder<TSendPackage> packageEncoder, IPackageScheduler<TSendPackage, TReceivePackage> scheduler,
+        ILogger? logger, ChannelOptions? options)
     {
+        _options = options?.Copy();
         ArgumentNullException.ThrowIfNull(pipelineFilter);
         ArgumentNullException.ThrowIfNull(packageEncoder);
         ArgumentNullException.ThrowIfNull(scheduler);
@@ -48,9 +55,9 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
         var address = new System.Uri(uri);
         IChannelCreator<TReceivePackage> creator = address.Scheme switch
         {
-            "sio" => new SerialIOChannelCreator<TReceivePackage>(_logger),
-            "udp" => new UdpChannelCreator<TReceivePackage>(_logger),
-            "tcp" => new TcpChannelCreator<TReceivePackage>(_logger),
+            "sio" => new SerialIOChannelCreator<TReceivePackage>(_logger, _options),
+            "udp" => new UdpChannelCreator<TReceivePackage>(_logger, _options),
+            "tcp" => new TcpChannelCreator<TReceivePackage>(_logger, _options),
             _ => throw new ArgumentException($"Unsupported URI scheme: {address.Scheme}", nameof(uri))
         };
         int generation;
@@ -213,4 +220,5 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
         _logger?.LogInformation("Channel {Uri} closed: {Reason}.", Uri, args.Reason);
     }
 }
+
 

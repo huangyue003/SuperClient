@@ -11,6 +11,8 @@ public class TcpPipeChannel<TReceivePackage> : PipeChannel<TReceivePackage>
         : base(pipelineFilter, options)
     {
         _socket = socket;
+        socket.NoDelay = options.NoDelay;
+        socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, options.KeepAlive);
         LocalEndPoint = socket.LocalEndPoint!;
         RemoteEndPoint = socket.RemoteEndPoint!;
     }
@@ -22,3 +24,4 @@ public class TcpPipeChannel<TReceivePackage> : PipeChannel<TReceivePackage>
     protected override bool IsIgnorableException(Exception e) => base.IsIgnorableException(e)
         || e is SocketException se && se.IsIgnorableSocketException();
 }
+

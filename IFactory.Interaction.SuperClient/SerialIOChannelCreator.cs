@@ -7,10 +7,12 @@ namespace IFactory.Interaction.SuperClient;
 internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceivePackage>
 {
     private readonly ILogger? _logger;
+    private readonly ChannelOptions? _options;
     private readonly object _sync = new();
     private SerialPort? _port;
     private bool _disposed;
-    public SerialIOChannelCreator(ILogger? logger) => _logger = logger;
+    public SerialIOChannelCreator(ILogger? logger) : this(logger, null) { }
+    public SerialIOChannelCreator(ILogger? logger, ChannelOptions? options) { _logger = logger; _options = options?.Copy(); }
     public Action<IChannel<TReceivePackage>>? ChannelCreated { get; set; }
     public void Dispose() { lock (_sync) { _disposed = true; _port?.Dispose(); } }
     public Task RunAsync(string uri, IPipelineFilter<TReceivePackage> pipelineFilter)
@@ -26,10 +28,11 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
                 port.Open();
                 _port = port;
                 ChannelCreated?.Invoke(new SerialIOPipeChannel<TReceivePackage>(port, pipelineFilter,
-                    ChannelUri.Options(ChannelUri.ParseQuery(new Uri(uri)), _logger)) { Identity = endpoint.PortName });
+                    ChannelUri.Options(ChannelUri.ParseQuery(new Uri(uri)), _logger, _options)) { Identity = endpoint.PortName });
             }
             catch { port.Dispose(); _port = null; throw; }
         }
         return Task.CompletedTask;
     }
 }
+

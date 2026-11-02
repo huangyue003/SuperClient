@@ -8,10 +8,12 @@ namespace IFactory.Interaction.SuperClient;
 public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackage>
 {
     private readonly ILogger? _logger;
+    private readonly ChannelOptions? _options;
     private readonly object _sync = new();
     private Socket? _socket;
     private bool _disposed;
-    public UdpChannelCreator(ILogger? logger) => _logger = logger;
+    public UdpChannelCreator(ILogger? logger) : this(logger, null) { }
+    public UdpChannelCreator(ILogger? logger, ChannelOptions? options) { _logger = logger; _options = options?.Copy(); }
     public Action<IChannel<TReceicePackage>>? ChannelCreated { get; set; }
     public void Dispose()
     {
@@ -26,7 +28,7 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
             throw new ArgumentException("RemoteEndPoint is required in UDP URI.");
         var remote = ChannelUri.RemoteEndPoint(remoteText, address);
         if (local.AddressFamily != remote.AddressFamily) throw new ArgumentException("Endpoint address families must match.");
-        var options = ChannelUri.Options(query, _logger);
+        var options = ChannelUri.Options(query, _logger, _options);
         // A UDP datagram must be received in full, otherwise the OS discards its tail.
         options.ReceiveBufferSize = Math.Max(options.ReceiveBufferSize, 65536);
         var multicast = false;
@@ -58,4 +60,5 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
         return Task.CompletedTask;
     }
 }
+
 
