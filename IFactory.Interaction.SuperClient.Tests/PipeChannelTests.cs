@@ -123,7 +123,7 @@ public class PipeChannelTests
         channel.Start();
         channel.Input.Writer.TryWrite(new byte[] { 1, 2, 3 });
         await TcpClientTest.WaitUntilAsync(() => channel.IsClosed);
-        Assert.Equal(CloseReason.ProtocolError, channel.CloseReason);
+        Assert.Equal(CloseReason.InternalError, channel.CloseReason);
     }
     [Fact]
     public async Task ObjectPipeDrainsAndCompletesPendingConsumer()
@@ -131,7 +131,7 @@ public class PipeChannelTests
         using var pipe = new DefaultObjectPipe<string>(2);
         Assert.Equal(1, pipe.Write("one"));
         Assert.Equal(2, pipe.Write("two"));
-        Assert.Throws<InvalidOperationException>(() => pipe.Write("overflow"));
+        Assert.Throws<ChannelQueueOverflowException>(() => pipe.Write("overflow"));
         pipe.Complete();
         Assert.Equal((true, "one"), await pipe.ReadAsync());
         Assert.Equal((true, "two"), await pipe.ReadAsync());
@@ -142,4 +142,5 @@ public class PipeChannelTests
         Assert.False((await read.WaitAsync(TimeSpan.FromSeconds(5))).HasValue);
     }
 }
+
 

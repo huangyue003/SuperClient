@@ -190,6 +190,12 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
             }
         }
         catch (OperationCanceledException) when (_cts.IsCancellationRequested) { }
+        catch (ChannelQueueOverflowException ex)
+        {
+            Logger?.LogError(ex, "Channel {Identity} receive queue overflow: pending={Pending}, capacity={Capacity}.",
+                Identity, ex.Pending, ex.Capacity);
+            RecordFailure(ex, SuperClient.CloseReason.InternalError, "receive-queue");
+        }
         catch (Exception ex)
         {
             CloseReason = SuperClient.CloseReason.ProtocolError;
@@ -306,6 +312,7 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected abstract ValueTask<int> FillPipeWithDataAsync(Memory<byte> memory, CancellationToken cancellationToken);
     protected abstract ValueTask<int> SendOverIOAsync(ReadOnlySequence<byte> buffer, CancellationToken cancellationToken);
 }
+
 
 
 

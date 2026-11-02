@@ -20,7 +20,7 @@ internal class DefaultObjectPipe<T> : IObjectPipe<T>, IDisposable
         if (Interlocked.Increment(ref _length) > _capacity)
         {
             Interlocked.Decrement(ref _length);
-            throw new InvalidOperationException("Decoded package queue is full; consume packages faster or increase MaxPendingPackages.");
+            throw new ChannelQueueOverflowException(Volatile.Read(ref _length), _capacity);
         }
         if (!_channel.Writer.TryWrite(target))
         {
@@ -60,3 +60,4 @@ internal class DefaultObjectPipeWithSupplyControl<T> : DefaultObjectPipe<T>, ISu
         catch (SemaphoreFullException) { }
     }
 }
+
