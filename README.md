@@ -2,6 +2,14 @@
 
 独立的 .NET 10 通信库，支持 TCP 客户端自动重连、TCP 单连接服务器、UDP 和串口，使用 SuperSocket.ProtoBase 解包。源工程复制自 `D:\Develop\BTS7_Master\IFACTORY`，原工程未修改；构建不依赖旧解决方案或 EasyClient。
 
+## 文档与快速体验
+
+- [项目结构、数据流与API选择](PROJECT-GUIDE.md)
+- [当前覆盖率与还需补充的测试](TEST-COVERAGE.md)
+- [本轮代码审查与修复结论](CODE-REVIEW.md)
+
+无需设备的TCP回环示例：`dotnet run --project examples/LoopbackDemo/LoopbackDemo.csproj -c Release`。
+
 ## 构建与验证
 
 ```powershell
@@ -17,6 +25,7 @@ dotnet publish IFactory.Interaction.SuperClient/IFactory.Interaction.SuperClient
 可重复的深度检查：
 
 ```powershell
+./scripts/Measure-Coverage.ps1
 ./scripts/Test-QualityMutations.ps1
 ./scripts/Measure-SendLatency.ps1 -Before c27f8c0 -After HEAD
 ```
@@ -116,4 +125,4 @@ ReceiveTimeout 是读取空闲等待期限：即使协议正确，连接长期�
 
 高级In/Out管道仍要求单读者、单写者；通过IPipeChannel.Out写入是低层管道入口，不具有公共SendAsync的逐调用完成确认。自定义In暂停阈值必须足够容纳未完整帧；不要跨重连复用已经完成的自定义Pipe。UDP请用公共发送方法保留数据报边界。
 
-首轮历史记录见 [REVIEW.md](REVIEW.md)，本轮实现决策、性能与验收结果见 [FIX-VALIDATION.md](FIX-VALIDATION.md)。
+历史记录见 [REVIEW.md](REVIEW.md) 和 [FIX-VALIDATION.md](FIX-VALIDATION.md)，当前复审结果见 [CODE-REVIEW.md](CODE-REVIEW.md) 与 [TEST-COVERAGE.md](TEST-COVERAGE.md)。

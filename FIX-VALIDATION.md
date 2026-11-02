@@ -1,5 +1,7 @@
 # 本轮修复与验证（2026-11-03）
 
+> 本文保留上一轮81项测试阶段的历史记录；最新96项测试、覆盖率与后续修复见 [CODE-REVIEW.md](CODE-REVIEW.md) 和 [TEST-COVERAGE.md](TEST-COVERAGE.md)。
+
 ## 实施决策与行为变化
 
 - B1：TCP/串口的公共 SendAsync 现在等待本次全部字节被底层接受；不保证对端收到或执行，不自动重发。原始字节直接发送；编码器/Action 使用有硬容量限制的池化 Pipe 分段缓冲，发送完成前保留段，不再 ToArray 全量复制。

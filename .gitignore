@@ -52,3 +52,18 @@ Thumbs.db
 
 # Local publish output
 [Pp]ublish/
+
+# Raw coverage reports and diagnostics (keep reviewed Markdown summaries)
+*.trx
+*.dmp
+*.diag
+coverage.cobertura.xml
+coverage.opencover.xml
+coverage.json
+BenchmarkDotNet.Artifacts/
+
+# Local review working papers; current project/review documents are tracked
+/DISCUSSION.md
+/HANDOFF.md
+/QUALITY-GATE.md
+/CODEX-RESPONSE.md
