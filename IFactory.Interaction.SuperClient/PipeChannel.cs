@@ -17,7 +17,7 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     private int _started;
     private int _enumerating;
     private bool _streamEnded;
-    private bool _detaching;
+
     private long _partialLength;
     protected SemaphoreSlim SendLock { get; } = new(1, 1);
     protected Pipe Out { get; }
@@ -65,7 +65,7 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
         catch (Exception ex) { if (!IsIgnorableException(ex)) OnError("Channel processing failed.", ex); }
         finally
         {
-            if (!_detaching)
+            if (true)
             {
                 try { Close(); }
                 catch (Exception ex) { if (!IsIgnorableException(ex)) OnError("Transport cleanup failed.", ex); }
@@ -297,14 +297,8 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected internal ArraySegment<T> GetArrayByMemory<T>(ReadOnlyMemory<T> memory)
         => MemoryMarshal.TryGetArray(memory, out var result) ? result : throw new InvalidOperationException("Expected array-backed memory.");
     protected void WriteEOFPackage() => _packagePipe.Complete();
-    public override async ValueTask DetachAsync()
-    {
-        _detaching = true;
-        _cts.Cancel();
-        In.Writer.CancelPendingFlush();
-        Out.Writer.CancelPendingFlush();
-        await _closingTask.ConfigureAwait(false);
-    }
+    public override ValueTask DetachAsync() => ValueTask.FromException(new NotSupportedException(
+        "Transport ownership cannot be transferred. Use CloseAsync instead."));
     protected void OnError(string message, Exception? ex = null) => Logger?.LogError(ex, "{Message}", message);
     protected virtual bool IsIgnorableException(Exception ex)
         => ex is ObjectDisposedException or OperationCanceledException;
@@ -312,6 +306,7 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected abstract ValueTask<int> FillPipeWithDataAsync(Memory<byte> memory, CancellationToken cancellationToken);
     protected abstract ValueTask<int> SendOverIOAsync(ReadOnlySequence<byte> buffer, CancellationToken cancellationToken);
 }
+
 
 
 

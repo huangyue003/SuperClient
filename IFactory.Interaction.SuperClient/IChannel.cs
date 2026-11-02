@@ -29,6 +29,8 @@ namespace IFactory.Interaction.SuperClient
 
         DateTimeOffset LastActiveTime { get; }
 
+        /// <summary>Built-in transports reject detachment before changing state.</summary>
+        /// <remarks>Use CloseAsync. This API does not transfer ownership of a socket or serial port.</remarks>
         ValueTask DetachAsync();
         string Identity { get; }
 
@@ -40,4 +42,5 @@ namespace IFactory.Interaction.SuperClient
         IAsyncEnumerable<TPackageInfo> RunAsync();
     }
 }
+
 
