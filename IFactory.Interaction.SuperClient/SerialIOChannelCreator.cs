@@ -16,7 +16,7 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
     private bool _started;
     public Task Completion { get; private set; } = Task.CompletedTask;
     public SerialIOChannelCreator(ILogger? logger) : this(logger, null) { }
-    public SerialIOChannelCreator(ILogger? logger, ChannelOptions? options) { _logger = logger; _options = options?.Copy(); }
+    public SerialIOChannelCreator(ILogger? logger, ChannelOptions? options) { _logger = logger ?? options?.Logger; _options = options?.Copy(); }
     public Action<IChannel<TReceivePackage>>? ChannelCreated { get; set; }
     public void Dispose()
     {
@@ -110,3 +110,4 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
         }
     }
 }
+

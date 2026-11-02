@@ -86,8 +86,8 @@ public abstract partial class PipeChannel<TPackageInfo>
                     accepted += count;
                     buffer = buffer.Slice(count);
                 }
-                token.ThrowIfCancellationRequested();
-                LastSendTime = LastActiveTime = DateTimeOffset.Now;
+                // Acceptance of the final bytes wins a concurrent close; bytes cannot be recalled.
+                if (length > 0 || SendEmptyBuffer) LastSendTime = LastActiveTime = DateTimeOffset.Now;
             }
             catch (Exception ex)
             {
@@ -142,6 +142,7 @@ public abstract partial class PipeChannel<TPackageInfo>
         return proposed;
     }
 }
+
 
 
 

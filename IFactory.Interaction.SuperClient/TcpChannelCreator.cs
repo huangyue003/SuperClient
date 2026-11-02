@@ -19,7 +19,7 @@ public class TcpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
     public EndPoint? LocalEndPoint { get; private set; }
     public Task Completion { get; private set; } = Task.CompletedTask;
     public TcpChannelCreator(ILogger? logger) : this(logger, null) { }
-    public TcpChannelCreator(ILogger? logger, ChannelOptions? options) { _logger = logger; _options = options?.Copy(); }
+    public TcpChannelCreator(ILogger? logger, ChannelOptions? options) { _logger = logger ?? options?.Logger; _options = options?.Copy(); }
     public Action<IChannel<TReceicePackage>>? ChannelCreated { get; set; }
 
     public void Dispose()
@@ -121,3 +121,4 @@ public class TcpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
         }
     }
 }
+

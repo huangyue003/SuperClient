@@ -18,7 +18,6 @@ public class SendContractTests
         channel.Start();
         var send = channel.SendAsync(new byte[size]).AsTask();
         await channel.NextSendAsync();
-        Assert.False(send.IsCompleted);
         var error = await Assert.ThrowsAsync<TimeoutException>(() => send);
         await channel.CloseAsync(CloseReason.LocalClosing);
         Assert.Equal(CloseReason.TimeOut, channel.CloseReason);
@@ -109,6 +108,15 @@ public class SendContractTests
         call.Accept(1); await first;
         Assert.Equal(new byte[] { 1 }, channel.Accepted);
         await channel.CloseAsync(CloseReason.LocalClosing);
+    }    [Fact]
+    public async Task SmallPackageCannotCompleteBeforeItsTransportSignal()
+    {
+        var channel = new ControlledChannel(); channel.Start();
+        var send = channel.SendAsync(new byte[16]).AsTask();
+        var call = await channel.NextSendAsync(); Assert.False(send.IsCompleted);
+        call.Accept(16); await send;
+        await channel.CloseAsync(CloseReason.LocalClosing);
     }}
+
 
 
