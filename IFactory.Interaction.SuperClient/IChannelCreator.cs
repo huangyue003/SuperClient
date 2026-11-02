@@ -1,3 +1,4 @@
+using System.Net;
 using SuperSocket.ProtoBase;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,9 @@ namespace IFactory.Interaction.SuperClient
     public interface IChannelCreator<TReceicePackage>
     {
         Action<IChannel<TReceicePackage>>? ChannelCreated { get; set; }
+        EndPoint? LocalEndPoint => null;
         void Dispose();
         Task RunAsync(string uri, IPipelineFilter<TReceicePackage> pipelineFilter);
     }
 }
+

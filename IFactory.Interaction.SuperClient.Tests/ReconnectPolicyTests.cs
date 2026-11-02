@@ -44,7 +44,7 @@ public class ReconnectPolicyTests
                 Assert.Equal(expected[i], retry.Delay.TotalMilliseconds);
                 if (i + 1 < expected.Length) retry.Resume.TrySetResult();
             }
-            Assert.Single(logger.Entries.Where(e => e.Level == LogLevel.Warning));
+            Assert.Single(logger.Entries, e => e.Level == LogLevel.Warning);
         }
         finally { creator.Dispose(); await creator.Completion.WaitAsync(TimeSpan.FromSeconds(5)); }
     }
@@ -70,3 +70,4 @@ public class ReconnectPolicyTests
         Assert.Equal(8, options.MaxPackageLength); Assert.Equal(10, options.SendTimeout);
     }
 }
+

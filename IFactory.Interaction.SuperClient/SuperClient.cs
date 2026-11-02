@@ -31,7 +31,7 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
         ArgumentNullException.ThrowIfNull(pipelineFilter);
         ArgumentNullException.ThrowIfNull(packageEncoder);
         ArgumentNullException.ThrowIfNull(scheduler);
-        _logger = logger;
+        _logger = logger ?? options?.Logger;
         _filter = pipelineFilter;
         _encoder = packageEncoder;
         Scheduler = scheduler;
@@ -46,6 +46,9 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
     public DateTimeOffset? LastActiveTime => Channel?.LastActiveTime ?? _lastActiveTime;
     public IPackageScheduler<TSendPackage, TReceivePackage> Scheduler { get; }
     public IAsyncEnumerator<TReceivePackage> _packageStream { get; set; } = null!;
+    public System.Net.EndPoint? LocalEndPoint => Channel?.LocalEndPoint ?? _creator?.LocalEndPoint;
+    public CloseReason? LastCloseReason { get; private set; }
+    public event EventHandler<ChannelDisconnectedEventArgs<TReceivePackage>>? Disconnected;
     public int Idetify { get; set; }
     public Action<SuperClient<TSendPackage, TReceivePackage>>? ChannelCreated { get; set; }
     public Action<SuperClient<TSendPackage, TReceivePackage>>? ChannelDisconnected { get; set; }
@@ -69,19 +72,27 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
 
     private void OnChannelCreated(IChannel<TReceivePackage> channel, int generation)
     {
+        int version;
         lock (_state)
         {
             if (generation != _generation) { _ = channel.CloseAsync(CloseReason.LocalClosing); return; }
             Channel = channel;
             channel.Closed += ChannelClosed;
-            channel.Start();
-            _packageStream = channel.GetPackageStream();
-            _receiveTask = ReceiveAsync(channel, _packageStream, ++_connectionVersion);
+            version = ++_connectionVersion;
         }
+        // Start and the synchronous prefix of ReceiveAsync can call user code.
+        // Never execute them while holding the lifecycle state lock.
+        channel.Start();
+        var stream = channel.GetPackageStream();
+        lock (_state)
+        {
+            if (version != _connectionVersion) { _ = channel.CloseAsync(CloseReason.LocalClosing); return; }
+            _packageStream = stream;
+        }
+        _receiveTask = ReceiveAsync(channel, stream, version);
         try { ChannelCreated?.Invoke(this); }
         catch (Exception ex) { _logger?.LogError(ex, "ChannelCreated callback failed."); }
     }
-
     private IChannel<TReceivePackage> GetChannel()
     {
         var channel = Channel;
@@ -215,10 +226,21 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
                 Channel = null;
             }
         }
+        LastCloseReason = args.Reason;
+        if (sender is IChannel<TReceivePackage> closed && Disconnected is { } handlers)
+        {
+            var snapshot = new ChannelDisconnectedEventArgs<TReceivePackage>(closed, args.Reason);
+            foreach (EventHandler<ChannelDisconnectedEventArgs<TReceivePackage>> handler in handlers.GetInvocationList())
+            {
+                try { handler(this, snapshot); }
+                catch (Exception ex) { _logger?.LogError(ex, "Disconnected observer failed."); }
+            }
+        }
         try { ChannelDisconnected?.Invoke(this); }
         catch (Exception ex) { _logger?.LogError(ex, "ChannelDisconnected callback failed."); }
         _logger?.LogInformation("Channel {Uri} closed: {Reason}.", Uri, args.Reason);
     }
 }
+
 
 

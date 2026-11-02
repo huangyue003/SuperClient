@@ -14,6 +14,7 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
     private bool _disposed;
     public UdpChannelCreator(ILogger? logger) : this(logger, null) { }
     public UdpChannelCreator(ILogger? logger, ChannelOptions? options) { _logger = logger; _options = options?.Copy(); }
+    public EndPoint? LocalEndPoint { get; private set; }
     public Action<IChannel<TReceicePackage>>? ChannelCreated { get; set; }
     public void Dispose()
     {
@@ -52,6 +53,7 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
                     socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 10);
                 }
                 _socket = socket;
+                LocalEndPoint = socket.LocalEndPoint;
                 ChannelCreated?.Invoke(new UdpPipeChannel<TReceicePackage>(socket, pipelineFilter, options, remote)
                 { Identity = $"{socket.LocalEndPoint}" });
             }
@@ -60,5 +62,6 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
         return Task.CompletedTask;
     }
 }
+
 
 
