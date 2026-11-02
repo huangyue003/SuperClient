@@ -49,3 +49,6 @@ Thumbs.db
 
 # Local WorkBuddy memory and agent state
 .workbuddy/
+
+# Local publish output
+[Pp]ublish/

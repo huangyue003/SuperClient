@@ -1,8 +1,11 @@
 <Project>
   <PropertyGroup>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <BaseOutputPath>bin\$(Platform)\</BaseOutputPath>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <BaseOutputPath>bin\</BaseOutputPath>
+    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <BaseIntermediateOutputPath>obj\$(Platform)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
     <DefaultItemExcludes>$(DefaultItemExcludes);**/bin/**;**/obj/**</DefaultItemExcludes>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -18,4 +21,5 @@
     <XunitVisualStudioRunnerVersion>4.0.1</XunitVisualStudioRunnerVersion>
   </PropertyGroup>
 </Project>
+
 
