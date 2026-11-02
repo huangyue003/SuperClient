@@ -102,7 +102,7 @@ public class PipeChannelTests
     {
         var channel = new TestChannel(new FixedSizePipelineFilter(1)) { ReturnZero = true };
         channel.Start();
-        await channel.SendAsync(new byte[] { 1 });
+        await Assert.ThrowsAsync<ChannelTransportException>(async () => await channel.SendAsync(new byte[] { 1 }));
         await TcpClientTest.WaitUntilAsync(() => channel.IsClosed);
         Assert.Equal(CloseReason.SocketError, channel.CloseReason);
     }
@@ -142,3 +142,4 @@ public class PipeChannelTests
         Assert.False((await read.WaitAsync(TimeSpan.FromSeconds(5))).HasValue);
     }
 }
+

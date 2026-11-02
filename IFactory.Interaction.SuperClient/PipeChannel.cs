@@ -104,24 +104,14 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected async ValueTask<bool> ProcessOutputRead(PipeReader reader, CancellationTokenSource cts)
     {
         var result = await reader.ReadAsync(cts.Token).ConfigureAwait(false);
-        var buffer = result.Buffer;
         try
         {
-            if (result.IsCanceled) return true;
-            using var timeout = CreateTimeout(cts.Token, Options.SendTimeout);
-            var token = timeout?.Token ?? cts.Token;
-            while (!buffer.IsEmpty)
-            {
-                var sent = await SendOverIOAsync(buffer, token).ConfigureAwait(false);
-                if (sent <= 0 || sent > buffer.Length) throw new IOException("Transport returned an invalid send count.");
-                buffer = buffer.Slice(sent);
-                LastActiveTime = DateTimeOffset.Now;
-            }
-            return result.IsCompleted;
+            if (!result.IsCanceled && !result.Buffer.IsEmpty)
+                await SendSequenceAsync(result.Buffer, System.Diagnostics.Stopwatch.GetTimestamp()).ConfigureAwait(false);
+            return result.IsCanceled || result.IsCompleted;
         }
         finally { reader.AdvanceTo(result.Buffer.End); }
     }
-
     protected virtual async Task ProcessReads()
         => await Task.WhenAll(FillPipeAsync(In.Writer), ReadPipeAsync(In.Reader)).ConfigureAwait(false);
 
@@ -137,7 +127,10 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
                 _cts.Token.ThrowIfCancellationRequested();
                 var memory = writer.GetMemory(Options.ReceiveBufferSize > 0 ? Options.ReceiveBufferSize : 4096);
                 using var timeout = CreateTimeout(_cts.Token, Options.ReceiveTimeout);
-                var count = await FillPipeWithDataAsync(memory, timeout?.Token ?? _cts.Token).ConfigureAwait(false);
+                int count;
+                try { count = await FillPipeWithDataAsync(memory, timeout?.Token ?? _cts.Token).ConfigureAwait(false); }
+                catch (OperationCanceledException ex) when (!_cts.IsCancellationRequested && timeout?.IsCancellationRequested == true)
+                { throw new TimeoutException("Receive timed out.", ex); }
                 if (count == 0)
                 {
                     CloseReason ??= SuperClient.CloseReason.RemoteClosing;
@@ -248,14 +241,8 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     private void FailTransport(Exception ex, string message)
     {
         if (!_cts.IsCancellationRequested)
-        {
-            CloseReason ??= ex is OperationCanceledException ? SuperClient.CloseReason.TimeOut : SuperClient.CloseReason.SocketError;
-            if (!IsIgnorableException(ex)) OnError(message, ex);
-            _cts.Cancel();
-            Close();
-        }
-    }
-    protected static CancellationTokenSource? CreateTimeout(CancellationToken token, int milliseconds)
+            RecordFailure(ex, ex is TimeoutException ? SuperClient.CloseReason.TimeOut : SuperClient.CloseReason.SocketError, message);
+    }    protected static CancellationTokenSource? CreateTimeout(CancellationToken token, int milliseconds)
     {
         if (milliseconds == 0) return null;
         var source = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -265,7 +252,8 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
 
     public override async ValueTask CloseAsync(CloseReason closeReason)
     {
-        if (IsClosed) return;
+        if (Volatile.Read(ref _closedInternally) != 0) return;
+        Interlocked.CompareExchange(ref _failure, new Failure(new IOException("Channel closed."), closeReason), null);
         CloseReason ??= closeReason;
         _cts.Cancel();
         try { Close(); }
@@ -277,40 +265,14 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
             Out.Writer.CancelPendingFlush();
             await _closingTask.ConfigureAwait(false);
             OnClosed();
+            Volatile.Write(ref _closedInternally, 1);
         }
     }
 
+    private int _closedInternally;
     protected void CheckChannelOpen()
     {
         if (IsClosed || _cts.IsCancellationRequested) throw new InvalidOperationException("Channel is closed.");
-    }
-    public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer)
-        => SendAsync(writer => writer.Write(buffer.Span));
-    public override ValueTask SendAsync<TPackage>(IPackageEncoder<TPackage> packageEncoder, TPackage package)
-    {
-        CheckChannelOpen();
-        var buffer = new ArrayBufferWriter<byte>();
-        packageEncoder.Encode(buffer, package);
-        return SendAsync(buffer.WrittenMemory);
-    }
-    public override async ValueTask SendAsync(Action<PipeWriter> write)
-    {
-        ArgumentNullException.ThrowIfNull(write);
-        await SendLock.WaitAsync(_cts.Token).ConfigureAwait(false);
-        try
-        {
-            CheckChannelOpen();
-            write(Out.Writer);
-            var result = await Out.Writer.FlushAsync(_cts.Token).ConfigureAwait(false);
-            if (result.IsCanceled || result.IsCompleted) throw new IOException("Outgoing pipe was closed.");
-        }
-        catch
-        {
-            _cts.Cancel();
-            Close();
-            throw;
-        }
-        finally { SendLock.Release(); }
     }
     protected void WritePackageWithEncoder<TPackage>(IBufferWriter<byte> writer, IPackageEncoder<TPackage> encoder, TPackage package)
     {
@@ -335,3 +297,5 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected abstract ValueTask<int> FillPipeWithDataAsync(Memory<byte> memory, CancellationToken cancellationToken);
     protected abstract ValueTask<int> SendOverIOAsync(ReadOnlySequence<byte> buffer, CancellationToken cancellationToken);
 }
+
+
