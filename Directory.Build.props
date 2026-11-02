@@ -16,6 +16,7 @@
     <LoggingAbstractionsVersion>10.0.14</LoggingAbstractionsVersion>
     <SuperSocketProtoBaseVersion>2.1.0</SuperSocketProtoBaseVersion>
     <SystemIOPortsVersion>10.0.14</SystemIOPortsVersion>
+    <CoverletCollectorVersion>10.1.0</CoverletCollectorVersion>
     <MicrosoftNETTestSdkVersion>18.11.0</MicrosoftNETTestSdkVersion>
     <XunitVersion>2.9.3</XunitVersion>
     <XunitVisualStudioRunnerVersion>4.0.1</XunitVisualStudioRunnerVersion>

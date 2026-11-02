@@ -1,5 +1,6 @@
 <Project>
   <ItemGroup>
+    <PackageReference Update="coverlet.collector" Version="$(CoverletCollectorVersion)" />
     <PackageReference Update="Microsoft.Extensions.Logging.Abstractions" Version="$(LoggingAbstractionsVersion)" />
     <PackageReference Update="SuperSocket.ProtoBase" Version="$(SuperSocketProtoBaseVersion)" />
     <PackageReference Update="System.IO.Ports" Version="$(SystemIOPortsVersion)" />

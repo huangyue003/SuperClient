@@ -67,6 +67,18 @@ $results += Test-Mutation 'B28-udp-without-lifetime-token' 'IFactory.Interaction
     param($s)
     $s.Replace('CreateTimeout(_cts.Token, remainingBudget', 'CreateTimeout(CancellationToken.None, remainingBudget').Replace('var token = timeout?.Token ?? _cts.Token;', 'var token = timeout?.Token ?? CancellationToken.None;')
 } 'FullyQualifiedName~CloseCancelsActiveUdpSendEvenWithTimeoutDisabled'
+$results += Test-Mutation 'review-old-request-cross-connection' 'IFactory.Interaction.SuperClient/SuperClient.cs' {
+    param($s)
+    $s.Replace('if (_connectionVersion > 0) (Scheduler as ISchedulerLifetime)?.CancelPending();', '')
+} 'FullyQualifiedName~NewConnectionCompletesOldRequestsEvenWhenOldReceiveCallbackIsStillBlocked'
+$results += Test-Mutation 'review-udp-callback-under-lock' 'IFactory.Interaction.SuperClient/UdpChannelCreator.cs' {
+    param($s)
+    $s.Replace('try { ChannelCreated?.Invoke(channel); }', 'try { lock (_sync) { ChannelCreated?.Invoke(channel); } }')
+} 'FullyQualifiedName~UdpCallbackRunsOutsideCreatorLockAndFailureClosesItsChannel'
+$results += Test-Mutation 'review-output-batch-as-frame' 'IFactory.Interaction.SuperClient/PipeChannel.cs' {
+    param($s)
+    $s.Replace('enforceFrameLimit: false', 'enforceFrameLimit: true')
+} 'FullyQualifiedName~LegacyOutputBatchCanContainSeveralValidFrames'
 $output = Join-Path $root 'TestResults'
 New-Item -ItemType Directory $output -Force | Out-Null
 $results | Export-Csv (Join-Path $output 'quality-mutations.csv') -NoTypeInformation
