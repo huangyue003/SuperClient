@@ -76,6 +76,10 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
         lock (_state)
         {
             if (generation != _generation) { _ = channel.CloseAsync(CloseReason.LocalClosing); return; }
+            // A previous receive callback can still be awaiting user work when
+            // its transport closes. Do not carry its pending requests into a
+            // new connection, where its finally block must not clear new ones.
+            if (_connectionVersion > 0) (Scheduler as ISchedulerLifetime)?.CancelPending();
             Channel = channel;
             channel.Closed += ChannelClosed;
             version = ++_connectionVersion;

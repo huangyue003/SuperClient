@@ -18,10 +18,13 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
     public Action<IChannel<TReceicePackage>>? ChannelCreated { get; set; }
     public void Dispose()
     {
-        lock (_sync) { _disposed = true; _socket?.Dispose(); }
+        Socket? socket;
+        lock (_sync) { _disposed = true; socket = _socket; }
+        socket?.Dispose();
     }
-    public Task RunAsync(string uri, IPipelineFilter<TReceicePackage> pipelineFilter)
+    public async Task RunAsync(string uri, IPipelineFilter<TReceicePackage> pipelineFilter)
     {
+        ArgumentNullException.ThrowIfNull(pipelineFilter);
         var address = ChannelUri.Parse(uri);
         if (address.Scheme != "udp") throw new ArgumentException("UDP creator requires a udp URI.", nameof(uri));
         var local = ChannelUri.LocalEndPoint(address);
@@ -36,6 +39,15 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
         var multicast = false;
         if (query.TryGetValue("Multicast", out var value) && !bool.TryParse(value, out multicast))
             throw new ArgumentException("Multicast must be true or false.");
+        if (multicast)
+        {
+            if (remote.AddressFamily != AddressFamily.InterNetwork)
+                throw new NotSupportedException("IPv6 multicast is not supported.");
+            byte first = remote.Address.GetAddressBytes()[0];
+            if (first < 224 || first > 239)
+                throw new ArgumentException($"Multicast requires an IPv4 group address in URI '{uri}'.", nameof(uri));
+        }
+        IChannel<TReceicePackage> channel;
         lock (_sync)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -47,7 +59,7 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
                 if (OperatingSystem.IsWindows()) socket.IOControl(unchecked((int)0x9800000C), new byte[] { 0 }, null);
                 if (multicast)
                 {
-                    if (local.AddressFamily != AddressFamily.InterNetwork) throw new NotSupportedException("IPv6 multicast is not supported.");
+
                     socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastLoopback, false);
                     socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, local.Address.GetAddressBytes());
                     socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(remote.Address, local.Address));
@@ -55,11 +67,19 @@ public class UdpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
                 }
                 _socket = socket;
                 LocalEndPoint = socket.LocalEndPoint;
-                ChannelCreated?.Invoke(new UdpPipeChannel<TReceicePackage>(socket, pipelineFilter, options, remote)
-                { Identity = $"{socket.LocalEndPoint}" });
+                channel = new UdpPipeChannel<TReceicePackage>(socket, pipelineFilter, options, remote)
+                { Identity = $"{socket.LocalEndPoint}" };
             }
             catch { socket.Dispose(); _socket = null; throw; }
         }
-        return Task.CompletedTask;
+        // External code can reenter Dispose or coordinate with another thread.
+        // Never invoke it while the creator mutex owns the transport state.
+        try { ChannelCreated?.Invoke(channel); }
+        catch
+        {
+            await channel.CloseAsync(CloseReason.ApplicationError).ConfigureAwait(false);
+            lock (_sync) { _socket = null; }
+            throw;
+        }
     }
 }

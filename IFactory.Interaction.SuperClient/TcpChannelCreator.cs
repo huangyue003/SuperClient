@@ -34,6 +34,7 @@ public class TcpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
     }
     public Task RunAsync(string uri, IPipelineFilter<TReceicePackage> pipelineFilter)
     {
+        ArgumentNullException.ThrowIfNull(pipelineFilter);
         var address = ChannelUri.Parse(uri);
         if (address.Scheme != "tcp") throw new ArgumentException("TCP creator requires a tcp URI.", nameof(uri));
         var query = ChannelUri.ParseQuery(address);

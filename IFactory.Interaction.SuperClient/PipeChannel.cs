@@ -103,7 +103,7 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
         try
         {
             if (!result.IsCanceled && !result.Buffer.IsEmpty)
-                await SendSequenceAsync(result.Buffer, System.Diagnostics.Stopwatch.GetTimestamp()).ConfigureAwait(false);
+                await SendSequenceAsync(result.Buffer, System.Diagnostics.Stopwatch.GetTimestamp(), enforceFrameLimit: false).ConfigureAwait(false);
             return result.IsCanceled || result.IsCompleted;
         }
         finally { reader.AdvanceTo(result.Buffer.End); }
@@ -257,7 +257,9 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     {
         if (!_cts.IsCancellationRequested)
             RecordFailure(ex, ex is TimeoutException ? SuperClient.CloseReason.TimeOut : SuperClient.CloseReason.SocketError, message);
-    }    protected static CancellationTokenSource? CreateTimeout(CancellationToken token, int milliseconds)
+    }
+
+    protected static CancellationTokenSource? CreateTimeout(CancellationToken token, int milliseconds)
     {
         if (milliseconds == 0) return null;
         var source = CancellationTokenSource.CreateLinkedTokenSource(token);

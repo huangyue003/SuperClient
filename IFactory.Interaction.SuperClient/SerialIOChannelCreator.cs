@@ -33,6 +33,7 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
     }
     public Task RunAsync(string uri, IPipelineFilter<TReceivePackage> pipelineFilter)
     {
+        ArgumentNullException.ThrowIfNull(pipelineFilter);
         var endpoint = new SerialIOEndPoint(uri);
         var options = ChannelUri.Options(ChannelUri.ParseQuery(ChannelUri.Parse(uri)), _logger, _options);
         lock (_sync)

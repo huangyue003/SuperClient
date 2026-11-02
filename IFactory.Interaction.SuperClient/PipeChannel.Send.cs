@@ -52,10 +52,10 @@ public abstract partial class PipeChannel<TPackageInfo>
         }
     }
 
-    private async ValueTask SendSequenceAsync(ReadOnlySequence<byte> buffer, long started)
+    private async ValueTask SendSequenceAsync(ReadOnlySequence<byte> buffer, long started, bool enforceFrameLimit = true)
     {
         CheckChannelOpen();
-        if (buffer.Length > MaximumSendLength) throw new ArgumentException($"Send exceeds {MaximumSendLength} bytes.");
+        if (enforceFrameLimit && buffer.Length > MaximumSendLength) throw new ArgumentException($"Send exceeds {MaximumSendLength} bytes.");
         var length = buffer.Length;
         var remainingBudget = Options.SendTimeout == 0 ? 0
             : Options.SendTimeout - Stopwatch.GetElapsedTime(started).TotalMilliseconds;
