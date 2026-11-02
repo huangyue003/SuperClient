@@ -142,8 +142,3 @@ public abstract partial class PipeChannel<TPackageInfo>
         return proposed;
     }
 }
-
-
-
-
-

@@ -16,4 +16,3 @@ public class EndpointValidationTests
         Assert.Contains(uri, error.Message); Assert.Equal("uri", error.ParamName);
     }
 }
-

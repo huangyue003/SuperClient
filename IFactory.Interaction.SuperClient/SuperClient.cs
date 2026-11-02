@@ -243,9 +243,3 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
         _logger?.LogInformation("Channel {Uri} closed: {Reason}.", Uri, args.Reason);
     }
 }
-
-
-
-
-
-

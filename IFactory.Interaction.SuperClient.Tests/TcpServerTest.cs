@@ -43,5 +43,3 @@ public class TcpServerTest
         await Assert.ThrowsAsync<ObjectDisposedException>(() => creator.RunAsync("tcp://127.0.0.1:1", new FixedSizePipelineFilter(1)));
     }
 }
-
-

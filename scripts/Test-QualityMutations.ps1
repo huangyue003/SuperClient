@@ -72,4 +72,3 @@ New-Item -ItemType Directory $output -Force | Out-Null
 $results | Export-Csv (Join-Path $output 'quality-mutations.csv') -NoTypeInformation
 $results | Format-Table Mutation, FailedTests, ExitCode
 Write-Output "Isolated source and logs: $stage"
-

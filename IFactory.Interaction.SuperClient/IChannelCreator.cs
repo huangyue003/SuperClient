@@ -16,4 +16,3 @@ namespace IFactory.Interaction.SuperClient
         Task RunAsync(string uri, IPipelineFilter<TReceicePackage> pipelineFilter);
     }
 }
-

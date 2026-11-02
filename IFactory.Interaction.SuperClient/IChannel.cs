@@ -46,6 +46,3 @@ namespace IFactory.Interaction.SuperClient
         IAsyncEnumerable<TPackageInfo> RunAsync();
     }
 }
-
-
-

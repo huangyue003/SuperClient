@@ -44,4 +44,3 @@ internal sealed class RecordingLogger : ILogger
     public void Log<TState>(LogLevel level, EventId id, TState state, Exception? error, Func<TState, Exception?, string> formatter)
     { lock (_entries) _entries.Add((level, formatter(state, error))); }
 }
-

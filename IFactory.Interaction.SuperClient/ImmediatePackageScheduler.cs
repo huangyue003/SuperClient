@@ -26,4 +26,3 @@ public class ImmediatePackageScheduler<TSendPackage, TReceivePackage> : IPackage
         return awaiter;
     }
 }
-

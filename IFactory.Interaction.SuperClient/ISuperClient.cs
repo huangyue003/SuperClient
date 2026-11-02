@@ -28,5 +28,3 @@ namespace IFactory.Interaction.SuperClient
         Task<TReceivePackage?> SendReceiveAsync(ReadOnlyMemory<byte> data, int millisecondsTimeout);
     }
 }
-
-

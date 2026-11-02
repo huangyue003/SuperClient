@@ -45,4 +45,3 @@ namespace IFactory.Interaction.SuperClient
         }
     }
 }
-

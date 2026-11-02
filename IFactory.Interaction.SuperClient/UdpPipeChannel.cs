@@ -37,5 +37,3 @@ public class UdpPipeChannel<TReceivePackage> : PipeChannel<TReceivePackage>
         return _socket.SendToAsync(buffer.IsSingleSegment ? buffer.First : buffer.ToArray(), SocketFlags.None, RemoteEndPoint!, token);
     }
 }
-
-

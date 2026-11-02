@@ -110,5 +110,3 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
         }
     }
 }
-
-

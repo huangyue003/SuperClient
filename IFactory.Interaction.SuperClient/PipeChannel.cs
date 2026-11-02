@@ -309,11 +309,3 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected abstract ValueTask<int> FillPipeWithDataAsync(Memory<byte> memory, CancellationToken cancellationToken);
     protected abstract ValueTask<int> SendOverIOAsync(ReadOnlySequence<byte> buffer, CancellationToken cancellationToken);
 }
-
-
-
-
-
-
-
-

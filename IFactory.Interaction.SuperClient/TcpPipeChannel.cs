@@ -24,4 +24,3 @@ public class TcpPipeChannel<TReceivePackage> : PipeChannel<TReceivePackage>
     protected override bool IsIgnorableException(Exception e) => base.IsIgnorableException(e)
         || e is SocketException se && se.IsIgnorableSocketException();
 }
-

@@ -27,4 +27,3 @@ public class UdpCancellationTests
         Assert.Equal(CloseReason.LocalClosing, error.Reason);
     }
 }
-

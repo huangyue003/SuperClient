@@ -49,4 +49,3 @@ public class ShutdownTests
         Assert.Same(cause, error.InnerException); Assert.Equal(CloseReason.SocketError, channel.CloseReason);
     }
 }
-

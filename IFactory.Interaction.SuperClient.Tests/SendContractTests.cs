@@ -117,6 +117,3 @@ public class SendContractTests
         call.Accept(16); await send;
         await channel.CloseAsync(CloseReason.LocalClosing);
     }}
-
-
-

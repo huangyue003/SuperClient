@@ -69,5 +69,3 @@ namespace IFactory.Interaction.SuperClient
         public Dictionary<string, string> Values { get; set; } = new();
     }
 }
-
-

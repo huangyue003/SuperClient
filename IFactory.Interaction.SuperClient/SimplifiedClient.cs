@@ -77,4 +77,3 @@ public class SimplifiedClient : SuperClient<byte[], byte[]>
         : base(uri, pipelineFilter, new ArrayPackageEncoder(), new ImmediatePackageScheduler<byte[], byte[]>(), logger) { }
     public SimplifiedClient(string uri, IPipelineFilter<byte[]> pipelineFilter, ChannelOptions options, ILogger? logger = null)
         : base(uri, pipelineFilter, new ArrayPackageEncoder(), new ImmediatePackageScheduler<byte[], byte[]>(), logger, options) { }}
-

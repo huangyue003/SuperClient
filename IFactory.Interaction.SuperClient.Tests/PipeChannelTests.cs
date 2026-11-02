@@ -142,5 +142,3 @@ public class PipeChannelTests
         Assert.False((await read.WaitAsync(TimeSpan.FromSeconds(5))).HasValue);
     }
 }
-
-

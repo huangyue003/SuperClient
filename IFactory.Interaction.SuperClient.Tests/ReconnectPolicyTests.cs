@@ -70,4 +70,3 @@ public class ReconnectPolicyTests
         Assert.Equal(8, options.MaxPackageLength); Assert.Equal(10, options.SendTimeout);
     }
 }
-
