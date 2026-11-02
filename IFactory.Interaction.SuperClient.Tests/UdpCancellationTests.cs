@@ -23,7 +23,8 @@ public class UdpCancellationTests
         var send = channel.SendAsync(new byte[] { 1 }).AsTask();
         await channel.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
         await channel.CloseAsync(CloseReason.LocalClosing).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
-        var error = await Assert.ThrowsAsync<ChannelTransportException>(() => send);
+        var error = await Assert.ThrowsAsync<ChannelTransportException>(() => send.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.Equal(CloseReason.LocalClosing, error.Reason);
     }
 }
+
