@@ -147,12 +147,24 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
         {
             await writer.CompleteAsync().ConfigureAwait(false);
             // Synchronize completion with application writes; PipeWriter is single-producer.
-            await SendLock.WaitAsync().ConfigureAwait(false);
-            try { await Out.Writer.CompleteAsync().ConfigureAwait(false); }
-            finally { SendLock.Release(); }
+            await CompleteOutputWriterAsync().ConfigureAwait(false);
         }
     }
 
+    private async ValueTask CompleteOutputWriterAsync()
+    {
+        var acquired = SendLock.Wait(0);
+        try
+        {
+            if (!acquired)
+            {
+                try { await SendLock.WaitAsync(_cts.Token).ConfigureAwait(false); acquired = true; }
+                catch (OperationCanceledException) when (_cts.IsCancellationRequested) { return; }
+            }
+            await Out.Writer.CompleteAsync().ConfigureAwait(false);
+        }
+        finally { if (acquired) SendLock.Release(); }
+    }
     protected async Task ReadPipeAsync(PipeReader reader)
     {
         try
@@ -189,6 +201,9 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
         {
             await reader.CompleteAsync().ConfigureAwait(false);
             WriteEOFPackage();
+            Interlocked.CompareExchange(ref _failure, new Failure(new IOException("Receive stream ended."),
+                CloseReason ?? SuperClient.CloseReason.RemoteClosing), null);
+            _cts.Cancel();
         }
     }
 
@@ -297,5 +312,6 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected abstract ValueTask<int> FillPipeWithDataAsync(Memory<byte> memory, CancellationToken cancellationToken);
     protected abstract ValueTask<int> SendOverIOAsync(ReadOnlySequence<byte> buffer, CancellationToken cancellationToken);
 }
+
 
 

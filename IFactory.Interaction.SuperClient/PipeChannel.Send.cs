@@ -99,7 +99,14 @@ public abstract partial class PipeChannel<TPackageInfo>
                 throw error;
             }
         }
-        finally { SendLock.Release(); }
+        finally
+        {
+            // If shutdown skipped a busy writer lock, its current owner finishes
+            // writer cleanup. No cancellation thrown from cleanup masks the fault.
+            try { if (_cts.IsCancellationRequested) await Out.Writer.CompleteAsync().ConfigureAwait(false); }
+            catch (Exception cleanup) { OnError("Output cleanup failed.", cleanup); }
+            finally { SendLock.Release(); }
+        }
     }
 
     private TimeoutException SendTimedOut(long length, long accepted, string stage, bool close)
@@ -125,3 +132,5 @@ public abstract partial class PipeChannel<TPackageInfo>
         catch (Exception cleanup) { OnError("Transport cleanup failed.", cleanup); }
     }
 }
+
+

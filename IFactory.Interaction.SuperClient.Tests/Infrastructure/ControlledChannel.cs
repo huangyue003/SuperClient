@@ -6,7 +6,7 @@ namespace IFactory.Interaction.SuperClient.Tests.Infrastructure;
 
 // Every transport operation is visible before the test releases it. No timing
 // assumptions, real network failures, polling, or Thread.Sleep are needed.
-internal sealed class ControlledChannel(ChannelOptions? options = null)
+internal class ControlledChannel(ChannelOptions? options = null)
     : PipeChannel<byte[]>(new FixedSizePipelineFilter(1), options ?? new ChannelOptions())
 {
     internal sealed class SendCall(byte[] bytes)
@@ -44,3 +44,4 @@ internal sealed class RecordingLogger : ILogger
     public void Log<TState>(LogLevel level, EventId id, TState state, Exception? error, Func<TState, Exception?, string> formatter)
     { lock (_entries) _entries.Add((level, formatter(state, error))); }
 }
+
