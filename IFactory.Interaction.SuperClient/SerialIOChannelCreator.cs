@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Ports;
 using Microsoft.Extensions.Logging;
 using SuperSocket.ProtoBase;
@@ -31,7 +32,7 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
         try { await channel.CloseAsync(CloseReason.LocalClosing).ConfigureAwait(false); }
         catch (Exception ex) { _logger?.LogError(ex, "Serial channel cleanup failed."); }
     }
-    public Task RunAsync(string uri, IPipelineFilter<TReceivePackage> pipelineFilter)
+    public async Task RunAsync(string uri, IPipelineFilter<TReceivePackage> pipelineFilter)
     {
         ArgumentNullException.ThrowIfNull(pipelineFilter);
         var endpoint = new SerialIOEndPoint(uri);
@@ -43,8 +44,26 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
             _started = true;
         }
         if (options.SerialReconnect) Completion = RunReconnectAsync(endpoint, pipelineFilter, options);
-        else Publish(OpenChannel(endpoint, pipelineFilter, options));
-        return Task.CompletedTask;
+        else Publish(await OpenWithGraceAsync(endpoint, pipelineFilter, options).ConfigureAwait(false));
+    }
+    private async Task<IChannel<TReceivePackage>> OpenWithGraceAsync(SerialIOEndPoint endpoint,
+        IPipelineFilter<TReceivePackage> filter, ChannelOptions options)
+    {
+        long started = Stopwatch.GetTimestamp();
+        while (true)
+        {
+            _stop.Token.ThrowIfCancellationRequested();
+            try { return OpenChannel(endpoint, filter, options); }
+            catch (UnauthorizedAccessException) when (options.SerialOpenRetryTimeout > 0
+                && Stopwatch.GetElapsedTime(started).TotalMilliseconds < options.SerialOpenRetryTimeout)
+            {
+                // Windows drivers may release the exclusive port handle shortly
+                // after Close returns. Retry only opening, never any command.
+                double remaining = options.SerialOpenRetryTimeout - Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+                if (remaining <= 0) throw;
+                await WaitForRetryAsync(TimeSpan.FromMilliseconds(Math.Min(25, remaining)), _stop.Token).ConfigureAwait(false);
+            }
+        }
     }
     protected virtual IChannel<TReceivePackage> OpenChannel(SerialIOEndPoint endpoint,
         IPipelineFilter<TReceivePackage> filter, ChannelOptions options)

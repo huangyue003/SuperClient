@@ -40,6 +40,8 @@ namespace IFactory.Interaction.SuperClient
         public int ReconnectMaxDelay { get; set; } = 5000;
         public bool ReconnectJitter { get; set; } = true;
         public bool SerialReconnect { get; set; }
+        /// <summary>Bounded grace for a recently closed native port to become available; 0 disables retries.</summary>
+        public int SerialOpenRetryTimeout { get; set; } = 500;
         public bool NoDelay { get; set; }
         public bool KeepAlive { get; set; }
 
@@ -56,6 +58,7 @@ namespace IFactory.Interaction.SuperClient
             ArgumentOutOfRangeException.ThrowIfNegative(ReceiveTimeout);
             ArgumentOutOfRangeException.ThrowIfNegative(SendTimeout);
             ArgumentOutOfRangeException.ThrowIfNegative(ConnectTimeout);
+            ArgumentOutOfRangeException.ThrowIfNegative(SerialOpenRetryTimeout);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(ReconnectMinDelay);
             ArgumentOutOfRangeException.ThrowIfLessThan(ReconnectMaxDelay, ReconnectMinDelay);
         }

@@ -24,6 +24,8 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
     protected Pipe In { get; }
     protected ILogger? Logger { get; }
     protected ChannelOptions Options { get; }
+    // Some native serial drivers ignore ReadAsync cancellation; timeout must close their handle.
+    protected virtual bool AbortOnReceiveTimeout => false;
     Pipe IPipeChannel.Out => Out;
     Pipe IPipeChannel.In => In;
     IPipelineFilter IPipeChannel.PipelineFilter => _pipelineFilter;
@@ -122,11 +124,20 @@ public abstract partial class PipeChannel<TPackageInfo> : ChannelBase<TPackageIn
                 if (supply is not null) await supply.SupplyRequired().ConfigureAwait(false);
                 _cts.Token.ThrowIfCancellationRequested();
                 var memory = writer.GetMemory(Options.ReceiveBufferSize > 0 ? Options.ReceiveBufferSize : 4096);
-                using var timeout = CreateTimeout(_cts.Token, Options.ReceiveTimeout);
                 int count;
-                try { count = await FillPipeWithDataAsync(memory, timeout?.Token ?? _cts.Token).ConfigureAwait(false); }
-                catch (OperationCanceledException ex) when (!_cts.IsCancellationRequested && timeout?.IsCancellationRequested == true)
-                { throw new TimeoutException("Receive timed out.", ex); }
+                using (var timeout = CreateTimeout(_cts.Token, Options.ReceiveTimeout))
+                {
+                    await using var deadlineRegistration = timeout is not null && AbortOnReceiveTimeout
+                        ? timeout.Token.Register(() =>
+                        {
+                            if (!_cts.IsCancellationRequested)
+                                RecordFailure(new TimeoutException("Receive timed out."), SuperClient.CloseReason.TimeOut, "receive");
+                        })
+                        : default(CancellationTokenRegistration);
+                    try { count = await FillPipeWithDataAsync(memory, timeout?.Token ?? _cts.Token).ConfigureAwait(false); }
+                    catch (OperationCanceledException ex) when (!_cts.IsCancellationRequested && timeout?.IsCancellationRequested == true)
+                    { throw new TimeoutException("Receive timed out.", ex); }
+                }
                 if (count == 0)
                 {
                     // EOF is latched after the parser drains the final buffered package.

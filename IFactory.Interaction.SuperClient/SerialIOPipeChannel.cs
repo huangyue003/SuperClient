@@ -9,6 +9,7 @@ public class SerialIOPipeChannel<TPackageInfo> : PipeChannel<TPackageInfo>
     private readonly SerialPort _serialPort;
     public SerialIOPipeChannel(SerialPort serialPort, IPipelineFilter<TPackageInfo> pipelineFilter, ChannelOptions options)
         : base(pipelineFilter, options) => _serialPort = serialPort;
+    protected override bool AbortOnReceiveTimeout => true;
     protected override void Close() => _serialPort.Dispose();
     public override ValueTask DetachAsync() => ValueTask.FromException(new NotSupportedException(
         "Serial streams cannot reliably cancel an active read without closing the port. Use CloseAsync instead."));
