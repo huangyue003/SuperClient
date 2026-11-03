@@ -7,6 +7,7 @@
 - [项目结构、数据流与API选择](PROJECT-GUIDE.md)
 - [当前覆盖率与还需补充的测试](TEST-COVERAGE.md)
 - [本轮代码审查与修复结论](CODE-REVIEW.md)
+- [COM1–COM2 原生虚拟串口验证与重跑方法](SERIAL-VALIDATION.md)
 
 无需设备的TCP回环示例：`dotnet run --project examples/LoopbackDemo/LoopbackDemo.csproj -c Release`。
 
@@ -76,6 +77,7 @@ TCP 本地监听地址、UDP 本地与 RemoteEndPoint 必须为 IP 字面量，�
 | ReadAsDemand | false | 按消费需求触发读取；不保证一个输入块中的多个包永不溢出 |
 | ReconnectMinDelay / ReconnectMaxDelay | 200 / 5000 | 连接失败指数退避的初始值与上限，毫秒 |
 | ReconnectJitter | true | 加入抖动，实际延时不超过上限 |
+| SerialOpenRetryTimeout | 500 | 一次性打开串口时，拒绝访问的有界重试窗口；0禁用 |
 | SerialReconnect | false | 显式开启串口连接恢复；不重发任何指令 |
 | NoDelay / KeepAlive | false / false | 可配置TCP套接字选项；不设置ReuseAddress或强制Linger |
 
@@ -102,6 +104,8 @@ TCP 失败重试有上限退避，首次、数量里程碑、定期汇总记录W
 SendTimeout 的计时包含同步编码/写入耗时，但同步用户代码不能被强行中断，只能在回调返回后观察超时。通道关闭不会等待一个永不返回的用户写入回调；该回调自己的任务仍需业务释放。底层驱动若不支持取消，也不能承诺毫秒级硬实时返回。
 
 `SendReceiveAsync(millisecondsTimeout)` **仅控制底层发送完成之后的响应等待**，不包含前一个串行请求的等待和发送预算；-1表示无限等待。发送阶段失败会抛异常；进入响应等待之后，超时或内置调度器遇到断连返回null。总耗时还可能包含无键请求排队，没有固定的“SendTimeout+响应超时”总上限。
+
+串口读取超时会先记录TimeOut，再关闭端口以解除驱动可能忽略取消的读取；刚关闭的端口允许在SerialOpenRetryTimeout窗口内重试打开，持续占用仍报错。
 
 ReceiveTimeout 是读取空闲等待期限：即使协议正确，连接长期没有新字节也会以TimeOut关闭，并可能触发TCP重连。它不是整个报文组装或业务事务的期限。
 

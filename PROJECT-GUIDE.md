@@ -140,4 +140,4 @@ dotnet test IFactory.Interaction.SuperClient.slnx -c Release
 ./scripts/Measure-Coverage.ps1
 ```
 
-修改发送、关闭或重连时，同时运行隔离故障变异脚本；修改平台构建时，先构建AnyCPU、再x86、最后默认`dotnet test --no-build`，确认路径和哈希没有被覆盖。串口真实I/O、组播、多平台及现场负载需要独立环境验证，不能用假传输覆盖率替代。
+修改发送、关闭或重连时，同时运行隔离故障变异脚本；修改平台构建时，先构建AnyCPU、再x86、最后默认`dotnet test --no-build`，确认路径和哈希没有被覆盖。本机COM1–COM2的原生I/O现已验证，重跑见 [SERIAL-VALIDATION.md](SERIAL-VALIDATION.md)；物理设备、组播、多平台和现场负载仍不能用该结果替代。
