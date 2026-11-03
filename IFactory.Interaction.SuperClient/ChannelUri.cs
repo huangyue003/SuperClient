@@ -59,6 +59,7 @@ internal static class ChannelUri
                 case "NODELAY": options.NoDelay = Boolean(value, key); break;
                 case "KEEPALIVE": options.KeepAlive = Boolean(value, key); break;
                 case "SERIALOPENRETRYTIMEOUT": options.SerialOpenRetryTimeout = Nonnegative(value, key); break;
+                case "SERIALRECONNECTONINTERNALERROR": options.SerialReconnectOnInternalError = Boolean(value, key); break;
                 case "SERIALRECONNECT": options.SerialReconnect = Boolean(value, key); break;
                 case "RECONNECTMINDELAY": options.ReconnectMinDelay = PositiveInt(value, key); break;
                 case "RECONNECTMAXDELAY": options.ReconnectMaxDelay = PositiveInt(value, key); break;

@@ -7,6 +7,7 @@
 - [项目结构、数据流与API选择](PROJECT-GUIDE.md)
 - [当前覆盖率与还需补充的测试](TEST-COVERAGE.md)
 - [本轮代码审查与修复结论](CODE-REVIEW.md)
+- [Workbuddy最终建议落实与x86验证](RECONNECT-REVIEW.md)
 - [COM1–COM2 原生虚拟串口验证与重跑方法](SERIAL-VALIDATION.md)
 
 无需设备的TCP回环示例：`dotnet run --project examples/LoopbackDemo/LoopbackDemo.csproj -c Release`。
@@ -16,7 +17,7 @@
 ```powershell
 dotnet restore IFactory.Interaction.SuperClient.slnx
 dotnet test IFactory.Interaction.SuperClient.slnx -c Release
-dotnet build IFactory.Interaction.SuperClient.slnx -c Release -p:Platform=x86
+dotnet test IFactory.Interaction.SuperClient.slnx -c Release -p:Platform=x86 -- RunConfiguration.TargetPlatform=x86
 dotnet test IFactory.Interaction.SuperClient.slnx -c Release --no-build
 dotnet publish IFactory.Interaction.SuperClient/IFactory.Interaction.SuperClient.csproj -c Release -p:PublishProfile=FolderProfile
 ```
@@ -77,13 +78,14 @@ TCP 本地监听地址、UDP 本地与 RemoteEndPoint 必须为 IP 字面量，�
 | ReadAsDemand | false | 按消费需求触发读取；不保证一个输入块中的多个包永不溢出 |
 | ReconnectMinDelay / ReconnectMaxDelay | 200 / 5000 | 连接失败指数退避的初始值与上限，毫秒 |
 | ReconnectJitter | true | 加入抖动，实际延时不超过上限 |
-| SerialOpenRetryTimeout | 500 | 一次性打开串口时，拒绝访问的有界重试窗口；0禁用 |
+| SerialOpenRetryTimeout | 500 | 每次打开串口时，拒绝访问的有界重试窗口；0禁用；重连模式耗尽后进入连接退避 |
 | SerialReconnect | false | 显式开启串口连接恢复；不重发任何指令 |
+| SerialReconnectOnInternalError | false | 配合SerialReconnect，允许InternalError（包括队列溢出）关闭后恢复连接 |
 | NoDelay / KeepAlive | false / false | 可配置TCP套接字选项；不设置ReuseAddress或强制Linger |
 
 串口默认参数为9600、8数据位、None校验、One停止位；必须提供真实端口名。保留合法数值枚举写法，包括现有的 `StopBits=1`；未定义的值会被拒绝并列出允许名称。无参端点对象用于配置，未填写端口名之前不应拿去打开设备。
 
-TCP 失败重试有上限退避，首次、数量里程碑、定期汇总记录Warning，恢复记录Information。串口恢复默认禁用；开启后仅连接/读取类故障触发恢复，本地关闭、应用/协议/容量错误停止恢复。
+TCP 失败重试有上限退避，首次、数量里程碑、定期汇总记录Warning，恢复记录Information。串口恢复默认禁用；开启后仅连接/读取类故障触发恢复，本地关闭、应用/协议错误始终停止恢复；InternalError（包括容量溢出）默认也停止。显式开启SerialReconnectOnInternalError后，连续InternalError按独立计数指数退避，成功打开端口不清零，其他可恢复关闭原因清零；旧队列丢弃且不重放命令。
 
 ## 发送完成、超时与失败
 

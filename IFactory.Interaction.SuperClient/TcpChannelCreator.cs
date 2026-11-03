@@ -88,14 +88,14 @@ public class TcpChannelCreator<TReceicePackage> : IChannelCreator<TReceicePackag
                     { throw new TimeoutException($"TCP connect timed out for {address}.", ex); }
                 }
                 lock (_sync) { if (_disposed) { socket.Dispose(); return; } _socket = socket; }
-                if (failures > 0) _logger?.LogInformation("TCP {Uri} recovered after {Failures} failures.", address, failures);
-                failures = 0; nextWarning = 1; connected = true;
                 filter.Reset();
                 var channel = new TcpPipeChannel<TReceicePackage>(socket, filter, options.Copy()) { Identity = $"{socket.RemoteEndPoint}" };
                 var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 channel.Closed += (_, _) => closed.TrySetResult();
                 try { ChannelCreated?.Invoke(channel); }
                 catch { await channel.CloseAsync(CloseReason.ApplicationError).ConfigureAwait(false); throw; }
+                if (failures > 0) _logger?.LogInformation("TCP {Uri} recovered after {Failures} failures.", address, failures);
+                failures = 0; nextWarning = 1; connected = true;
                 await closed.Task.WaitAsync(token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { break; }

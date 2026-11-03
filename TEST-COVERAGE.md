@@ -1,5 +1,8 @@
 # 测试覆盖率与补测评估
 
+
+> 最新复审（2026-11-03）：x64 Debug/Release与x86 Release均120/120通过，包含8项COM1–COM2原生测试；Release覆盖906/968行（93.59%）、506/645分支（78.44%）。以下保留此前阶段记录；最新行为和重跑命令见 [RECONNECT-REVIEW.md](RECONNECT-REVIEW.md)。
+
 > 后续已使用本机COM1–COM2执行原生驱动测试：启用时108项通过，行覆盖93.31%、分支77.58%。以下96项数据保留为无串口阶段基线，最新串口范围与结果见 [SERIAL-VALIDATION.md](SERIAL-VALIDATION.md)。
 
 测量日期：2026-11-03。范围为主库IFactory.Interaction.SuperClient，Release/Windows x64/.NET10，VSTest + coverlet.collector 10.1.0。没有排除串口类、接口默认实现或自动属性来提高覆盖率。入口配置为coverage.runsettings，原始报告保存在本地TestResults目录。

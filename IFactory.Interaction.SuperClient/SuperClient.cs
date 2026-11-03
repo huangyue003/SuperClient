@@ -47,7 +47,11 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
     public IPackageScheduler<TSendPackage, TReceivePackage> Scheduler { get; }
     public IAsyncEnumerator<TReceivePackage> _packageStream { get; set; } = null!;
     public System.Net.EndPoint? LocalEndPoint => Channel?.LocalEndPoint ?? _creator?.LocalEndPoint;
-    public CloseReason? LastCloseReason { get; private set; }
+    private int _lastCloseReason = -1;
+    public CloseReason? LastCloseReason
+    {
+        get { int value = Volatile.Read(ref _lastCloseReason); return value < 0 ? null : (CloseReason)value; }
+    }
     public event EventHandler<ChannelDisconnectedEventArgs<TReceivePackage>>? Disconnected;
     public int Idetify { get; set; }
     public Action<SuperClient<TSendPackage, TReceivePackage>>? ChannelCreated { get; set; }
@@ -232,7 +236,7 @@ public class SuperClient<TSendPackage, TReceivePackage> : ISuperClient<TSendPack
                 Channel = null;
             }
         }
-        LastCloseReason = args.Reason;
+        Volatile.Write(ref _lastCloseReason, (int)args.Reason);
         if (sender is IChannel<TReceivePackage> closed && Disconnected is { } handlers)
         {
             var snapshot = new ChannelDisconnectedEventArgs<TReceivePackage>(closed, args.Reason);

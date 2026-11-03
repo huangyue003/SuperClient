@@ -1,5 +1,8 @@
 # COM1–COM2 原生虚拟串口验证
 
+
+> 最新复审（2026-11-03）：x64 Debug/Release与x86 Release均120/120通过，包含8项COM1–COM2原生测试；Release覆盖906/968行（93.59%）、506/645分支（78.44%）。以下保留此前阶段记录；最新行为和重跑命令见 [RECONNECT-REVIEW.md](RECONNECT-REVIEW.md)。
+
 日期：2026-11-03。Windows x64、.NET10，实际打开本机COM1和COM2，115200波特率、8数据位、无校验、1停止位。这里经过System.IO.Ports和本机虚拟串口驱动，区别于之前仅使用内存假传输的策略测试；仍不等同真实UART/USB设备验收。
 
 ## 本次结果
@@ -37,7 +40,7 @@
 
 完整测试中复现COM1刚关闭后立即Open抛UnauthorizedAccessException，单独重置循环又可通过。这与Windows驱动独占句柄延迟释放现象一致；不把它武断解释为全部拒绝访问都可恢复。
 
-新增SerialOpenRetryTimeout，默认500ms，0关闭。仅对一次性串口打开的UnauthorizedAccessException进行有界、可取消重试；时间用尽仍抛出原错误，不接管其他应用、不重发命令。SerialReconnect=true仍使用其原有连接恢复退避，二者不是命令重试。
+新增SerialOpenRetryTimeout，默认500ms，0关闭。仅对串口打开的UnauthorizedAccessException进行有界、可取消重试，不接管其他应用、不重发命令。当前版本的一次性打开和SerialReconnect=true的每次重连均使用该宽限；一次性打开预算耗尽抛出原错误，重连模式预算耗尽后进入普通连接退避，二者不是命令重试。
 
 测试中的独立原生Open探针也最多等待500ms释放窗口：验证最终释放，不声称Close返回后操作系统立即允许重开。永久占用或句柄泄漏仍会使测试失败。
 

@@ -96,18 +96,28 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
     {
         var token = _stop.Token;
         int failures = 0;
+        int internalClosures = 0;
         while (!token.IsCancellationRequested)
         {
             IChannel<TReceivePackage>? channel = null;
             try
             {
                 filter.Reset();
-                channel = OpenChannel(endpoint, filter, options);
+                channel = await OpenWithGraceAsync(endpoint, filter, options).ConfigureAwait(false);
                 var closed = new TaskCompletionSource<CloseReason>(TaskCreationOptions.RunContinuationsAsynchronously);
                 channel.Closed += (_, args) => closed.TrySetResult(args.Reason);
                 Publish(channel); failures = 0;
                 var reason = await closed.Task.WaitAsync(token).ConfigureAwait(false);
-                if (reason is CloseReason.LocalClosing or CloseReason.ApplicationError or CloseReason.ProtocolError or CloseReason.InternalError) return;
+                if (reason is CloseReason.LocalClosing or CloseReason.ApplicationError or CloseReason.ProtocolError) return;
+                if (reason == CloseReason.InternalError)
+                {
+                    if (!options.SerialReconnectOnInternalError) return;
+                    if (internalClosures < int.MaxValue) internalClosures++;
+                    if (internalClosures == 1 || internalClosures % 10 == 0)
+                        _logger?.LogWarning("Serial {Port}: {Count} consecutive internal closures; retrying connection without replaying commands.",
+                            endpoint.PortName, internalClosures);
+                }
+                else internalClosures = 0;
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
             catch (Exception ex)
@@ -123,7 +133,7 @@ internal class SerialIOChannelCreator<TReceivePackage> : IChannelCreator<TReceiv
                 lock (_sync) { if (ReferenceEquals(channel, _current)) _current = null; }
             }
             double delay = Math.Min(options.ReconnectMaxDelay,
-                options.ReconnectMinDelay * Math.Pow(2, Math.Min(Math.Max(failures - 1, 0), 30)));
+                options.ReconnectMinDelay * Math.Pow(2, Math.Min(Math.Max(Math.Max(failures, internalClosures) - 1, 0), 30)));
             if (options.ReconnectJitter) delay = Math.Min(options.ReconnectMaxDelay, delay * (0.8 + Random.Shared.NextDouble() * 0.4));
             try { await WaitForRetryAsync(TimeSpan.FromMilliseconds(delay), token).ConfigureAwait(false); }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }

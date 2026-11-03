@@ -1,5 +1,8 @@
 # 本轮代码审查结论
 
+
+> 最新复审（2026-11-03）：x64 Debug/Release与x86 Release均120/120通过，包含8项COM1–COM2原生测试；Release覆盖906/968行（93.59%）、506/645分支（78.44%）。以下保留此前阶段记录；最新行为和重跑命令见 [RECONNECT-REVIEW.md](RECONNECT-REVIEW.md)。
+
 > 后续补做COM1–COM2原生串口，发现并修复读取超时与打开宽限问题；最新108项结果见 [SERIAL-VALIDATION.md](SERIAL-VALIDATION.md)，下文保留本轮96项审查历史。
 
 日期：2026-11-03。基线业务提交431e787；先重跑81项测试，再结合覆盖报告审查主库36个C#文件、测试、构建与脚本。历史记录REVIEW.md与FIX-VALIDATION.md分别保留此前轮次，当前结论以本文和TEST-COVERAGE.md为准。

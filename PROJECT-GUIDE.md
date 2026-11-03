@@ -120,7 +120,7 @@ UDP每次公共SendAsync对应一个数据报，允许主动发送空报文；�
 4. DisposeChannelAsync关闭当前传输与创建器；ResetChannelAsync串行地关闭、重置filter并创建新传输。await using适合拥有完整客户端生命周期的调用方。
 5. 重连使用连接代次隔离；新连接建立时结束内置调度器的旧请求，旧接收回调收尾不能清掉新请求。不要跨连接延续有副作用命令，也不要让回调长期阻塞。
 
-TCP客户端自动连接恢复；TCP服务端依次接受单个活动连接。串口SerialReconnect默认false，显式开启后只恢复连接，不重放命令。本地、应用、协议与队列容量错误会停止串口恢复。内置DetachAsync统一不支持。
+TCP客户端自动连接恢复；TCP服务端依次接受单个活动连接。串口SerialReconnect默认false，显式开启后只恢复连接，不重放命令。本地、应用和协议错误始终停止串口恢复；InternalError（包括队列容量错误）默认停止，可通过SerialReconnectOnInternalError显式允许有界退避恢复。每次打开均使用SerialOpenRetryTimeout宽限；完整策略见README。内置DetachAsync统一不支持。
 
 ## 8. 时间预算与资源边界
 

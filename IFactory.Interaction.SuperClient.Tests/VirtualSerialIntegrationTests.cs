@@ -180,4 +180,31 @@ public class VirtualSerialIntegrationTests
             if (latest is not null) await latest.CloseAsync(CloseReason.LocalClosing).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
             creator.Dispose(); await creator.Completion.WaitAsync(TimeSpan.FromSeconds(5));
         }
+    }    [VirtualSerialFact]
+    public async Task OptInQueueOverflowRecoveryReopensPortAndDropsTheOldFrameBacklog()
+    {
+        var ports = Ports(); using var peer = await OpenEventuallyAsync(ports.Peer);
+        var creator = new SerialIOChannelCreator<byte[]>(null, new ChannelOptions { SerialReconnect = true,
+            SerialReconnectOnInternalError = true, MaxPendingPackages = 1, ReconnectMinDelay = 25, ReconnectMaxDelay = 100, ReconnectJitter = false });
+        var opened = Channel.CreateUnbounded<IChannel<byte[]>>(); IChannel<byte[]>? latest = null;
+        var overflow = new TaskCompletionSource<CloseReason>(TaskCreationOptions.RunContinuationsAsynchronously);
+        creator.ChannelCreated = channel => { latest = channel; channel.Closed += (_, e) => overflow.TrySetResult(e.Reason); channel.Start(); opened.Writer.TryWrite(channel); };
+        try
+        {
+            await creator.RunAsync(Address(ports.Client), new FixedSizePipelineFilter(1));
+            var first = await opened.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            await peer.BaseStream.WriteAsync(new byte[] { 1, 2, 3 }); // Deliberately no consumer on the first connection.
+            Assert.Equal(CloseReason.InternalError, await overflow.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+            var second = await opened.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)); Assert.NotSame(first, second);
+            Assert.Equal(0, peer.BytesToRead);
+            await using var stream = second.GetPackageStream(); var incoming = stream.MoveNextAsync().AsTask();
+            await peer.BaseStream.WriteAsync(new byte[] { 9 });
+            Assert.True(await incoming.WaitAsync(TimeSpan.FromSeconds(5))); Assert.Equal(new byte[] { 9 }, stream.Current);
+            await second.SendAsync(new byte[] { 7 }); Assert.Equal(new byte[] { 7 }, await ReadAsync(peer, 1));
+        }
+        finally
+        {
+            if (latest is not null) await latest.CloseAsync(CloseReason.LocalClosing).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            creator.Dispose(); await creator.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+        }
     }}

@@ -40,6 +40,8 @@ namespace IFactory.Interaction.SuperClient
         public int ReconnectMaxDelay { get; set; } = 5000;
         public bool ReconnectJitter { get; set; } = true;
         public bool SerialReconnect { get; set; }
+        /// <summary>Opt in to retrying serial InternalError closures, with separate consecutive-close backoff.</summary>
+        public bool SerialReconnectOnInternalError { get; set; }
         /// <summary>Bounded grace for a recently closed native port to become available; 0 disables retries.</summary>
         public int SerialOpenRetryTimeout { get; set; } = 500;
         public bool NoDelay { get; set; }
