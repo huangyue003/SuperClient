@@ -1,9 +1,10 @@
 # SuperClient
 
-独立的 .NET 10 通信库，支持 TCP 客户端自动重连、TCP 单连接服务器、UDP 和串口，使用 SuperSocket.ProtoBase 解包。源工程复制自 `D:\Develop\BTS7_Master\IFACTORY`，原工程未修改；构建不依赖旧解决方案或 EasyClient。
+独立的 .NET 10 通信库，支持 TCP 客户端自动重连、TCP 单连接服务器、UDP 和串口，使用 SuperSocket.ProtoBase 解包。
 
 ## 文档与快速体验
 
+- [项目概览与Wiki首页说明](WIKI.md)
 - [项目结构、数据流与API选择](PROJECT-GUIDE.md)
 - [当前覆盖率与还需补充的测试](TEST-COVERAGE.md)
 - [本轮代码审查与修复结论](CODE-REVIEW.md)
